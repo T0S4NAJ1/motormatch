@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — MotorMatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles/global.css">
+  <link rel="stylesheet" href="assets/styles/auth.css">
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+    <section class="auth-info">
+      <h1>Buat akun <span class="logo-text">MotorMatch</span></h1>
+      <p>Buat akun untuk mengakses fitur MotorMatch sesuai kebutuhan Anda.</p>
+      <p class="auth-disclaimer">PERINGATAN: Website ini hanya sebatas <strong>rekomendasi</strong>, tidak ada niat untuk memperjualbelikan produk dari masing-masing brand motor.</p>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <h2>Registrasi</h2>
+        <p class="auth-sub">Lengkapi data berikut untuk membuat akun.</p>
+        <form class="auth-form" id="register-form">
+          <div class="auth-message" id="auth-message"></div>
+          <label>Nama Lengkap
+            <input type="text" name="full_name" autocomplete="name" required placeholder="Masukkan nama lengkap">
+          </label>
+          <label>Username
+            <input type="text" name="username" autocomplete="username" required placeholder="3-30 karakter">
+          </label>
+          <label>Password
+            <input type="password" name="password" autocomplete="new-password" required placeholder="Minimal 8 karakter, huruf besar, huruf kecil, angka">
+          </label>
+          <label>Konfirmasi Password
+            <input type="password" name="confirm_password" autocomplete="new-password" required placeholder="Masukkan password lagi">
+          </label>
+          <button class="btn-primary" type="submit" data-label="Daftar">Daftar</button>
+        </form>
+        <p class="auth-alt">Sudah punya akun? <a href="/login.html">Masuk di sini</a></p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/scripts/auth-service.js"></script>
+  <script src="assets/scripts/auth-page.js"></script>
+</body>
+</html>

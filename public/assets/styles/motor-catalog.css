@@ -1,0 +1,511 @@
+/* ============================================================
+   motor-catalog.css - MotorMatch Racing Dark Theme
+   ============================================================ */
+
+#page-katalog { background: transparent; }
+
+.katalog-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.katalog-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.katalog-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.katalog-sub {
+  font-size: .9rem;
+  color: var(--text-secondary);
+}
+
+/* ==================== KATALOG LAYOUT ==================== */
+.katalog-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
+}
+
+/* ==================== FILTER SIDEBAR ==================== */
+.filter-sidebar {
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  height: fit-content;
+  position: sticky;
+  top: calc(var(--nav-h) + 1.5rem);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.filter-title {
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-section {
+  margin-bottom: 1.5rem;
+}
+
+.filter-label {
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.filter-check:hover {
+  color: var(--accent);
+}
+
+.filter-check input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.filter-check span {
+  font-size: .85rem;
+}
+
+.filter-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-btn {
+  font-size: .73rem;
+  padding: 8px 14px;
+  border-radius: 50px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all .3s ease;
+  font-family: var(--font);
+}
+
+.filter-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(230, 57, 70, 0.1);
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 15px var(--accent-glow);
+}
+
+/* ==================== KATALOG TOPBAR ==================== */
+.katalog-topbar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.search-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.search-wrap input {
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px 12px 44px;
+  font-size: .9rem;
+  color: var(--text);
+  font-family: var(--font);
+  outline: none;
+  transition: all .3s ease;
+}
+
+.search-wrap input:focus {
+  border-color: var(--accent);
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.search-wrap input::placeholder {
+  color: var(--text-secondary);
+}
+
+.search-wrap::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+.search-wrap::after {
+  content: '';
+  position: absolute;
+  left: 24px;
+  top: 58%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 2px;
+  height: 8px;
+  background: var(--text-secondary);
+  opacity: 0.6;
+}
+
+#kat-sort {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: .85rem;
+  color: var(--text);
+  font-family: var(--font);
+  cursor: pointer;
+  outline: none;
+  transition: all .3s ease;
+  min-width: 160px;
+}
+
+#kat-sort:focus {
+  border-color: var(--accent);
+}
+
+#kat-sort option {
+  background: var(--bg2);
+  color: var(--text);
+}
+
+/* ==================== KATALOG GRID ==================== */
+.katalog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.kat-card {
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  transition: all .4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.kat-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px var(--accent-glow);
+}
+
+.kat-img {
+  background: linear-gradient(135deg, var(--bg), var(--bg3));
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.kat-img::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.4) 100%);
+  pointer-events: none;
+}
+
+.kat-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .5s ease;
+}
+
+.kat-card:hover .kat-img img {
+  transform: scale(1.08);
+}
+
+.kat-type-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 50px;
+  z-index: 2;
+}
+
+.badge-matic {
+  background: rgba(0, 212, 255, 0.2);
+  color: var(--cyan);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+}
+
+.badge-sport {
+  background: rgba(230, 57, 70, 0.2);
+  color: var(--accent);
+  border: 1px solid rgba(230, 57, 70, 0.4);
+  box-shadow: 0 4px 15px rgba(230, 57, 70, 0.2);
+}
+
+.badge-naked {
+  background: rgba(168, 85, 247, 0.2);
+  color: var(--purple);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.2);
+}
+
+.badge-kopling {
+  background: rgba(230, 57, 70, 0.2);
+  color: var(--accent);
+  border: 1px solid rgba(230, 57, 70, 0.4);
+}
+
+.badge-gigi {
+  background: rgba(0, 212, 255, 0.2);
+  color: var(--cyan);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+}
+
+.kat-body {
+  padding: 1rem;
+}
+
+.kat-name {
+  font-size: .95rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.kat-price {
+  font-size: .95rem;
+  color: var(--gold);
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-shadow: 0 0 15px var(--gold-glow);
+}
+
+.kat-specs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.kat-spec {
+  font-size: .66rem;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.03);
+  padding: 3px 8px;
+  border-radius: 50px;
+}
+
+.kat-action {
+  padding: 0.875rem 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn-lihat {
+  width: 100%;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 10px;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all .3s ease;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.btn-lihat:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(230, 57, 70, 0.1);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.no-result {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+  grid-column: 1 / -1;
+  background: rgba(255,255,255,0.02);
+  border-radius: 16px;
+  border: 1px dashed var(--border);
+}
+
+/* ==================== TABLE VIEW ==================== */
+.motor-table-wrap {
+  overflow-x: auto;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+
+.motor-catalog-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .875rem;
+}
+
+.motor-catalog-table thead {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+}
+
+.motor-catalog-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 700;
+  color: #fff;
+  font-size: .75rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.motor-catalog-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: all .2s;
+  cursor: pointer;
+}
+
+.motor-catalog-table tbody tr:hover {
+  background: rgba(230, 57, 70, 0.08);
+}
+
+.motor-catalog-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.motor-catalog-table td {
+  padding: 1rem;
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.motor-catalog-table td:first-child {
+  color: var(--text-secondary);
+  font-size: .75rem;
+  text-align: center;
+  width: 50px;
+}
+
+.motor-catalog-table td:nth-child(2) {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.motor-catalog-table td:nth-child(3) {
+  font-weight: 500;
+}
+
+.motor-catalog-table td:nth-child(7) {
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.motor-catalog-table td:nth-child(8) {
+  color: var(--text-secondary);
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.type-badge[data-category="Matic"] {
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--cyan);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.type-badge[data-category="Sport"] {
+  background: rgba(230, 57, 70, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(230, 57, 70, 0.3);
+}
+
+.type-badge[data-category="Naked"] {
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--purple);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.price-cell {
+  font-weight: 700;
+  color: var(--gold);
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 1100px) {
+  .katalog-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .katalog-layout { grid-template-columns: 1fr; }
+  .filter-sidebar { position: static; }
+  .katalog-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .katalog-grid { grid-template-columns: 1fr; }
+  .katalog-wrap { padding: 2rem 1rem; }
+}

@@ -1,0 +1,59 @@
+# ============================================
+# MotorMatch - .gitignore
+# ============================================
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables (local credentials)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Directory for temp files
+tmp/
+temp/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+
+# Debug logs
+debug.log
+
+# Database files (if any local DB)
+*.sqlite
+*.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git related (keep these if needed)
+# README.md is kept - important for repo

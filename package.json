@@ -1,0 +1,31 @@
+{
+  "name": "motormatch-saw-rbac",
+  "version": "1.0.0",
+  "description": "Website rekomendasi motor dengan login, registrasi, dan dashboard pengelolaan data.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "setup": "node backend/database/setup-database.js",
+    "seed": "node backend/database/setup-database.js",
+    "doctor": "node backend/database/check-database.js",
+    "fixdb": "node backend/database/debug-database.js && node backend/database/setup-database.js && node backend/database/check-database.js",
+    "debugdb": "node backend/database/debug-database.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.11.0",
+    "node-unrar-js": "^2.0.2"
+  },
+  "keywords": [
+    "SPK",
+    "SAW",
+    "motor",
+    "rekomendasi",
+    "mysql",
+    "rbac",
+    "login"
+  ],
+  "author": "",
+  "license": "MIT"
+}

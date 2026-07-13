@@ -1,0 +1,565 @@
+/* ============================================================
+   recommendation-result.css - MotorMatch Racing Dark Theme
+   ============================================================ */
+
+#page-hasil { background: transparent; }
+
+.hasil-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.hasil-header {
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.hasil-kecil {
+  font-size: .72rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.hasil-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+}
+
+.hasil-pref {
+  font-size: .85rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+/* ==================== TOP RECOMMENDATION ==================== */
+.top-rec {
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  overflow: hidden;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 50px rgba(230, 57, 70, 0.15);
+  position: relative;
+}
+
+.top-rec::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--cyan), var(--accent));
+}
+
+.top-rec-inner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2.5rem;
+  padding: 2.5rem;
+  align-items: center;
+}
+
+.top-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(230, 57, 70, 0.15);
+  border: 1px solid rgba(230, 57, 70, 0.4);
+  color: var(--accent);
+  padding: 8px 16px;
+  border-radius: 50px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  box-shadow: 0 0 20px rgba(230, 57, 70, 0.2);
+}
+
+.top-badge::before {
+  content: '★';
+  color: var(--gold);
+}
+
+.top-name {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, #ffffff, var(--text-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.top-desc {
+  font-size: .9rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  max-width: 500px;
+}
+
+.top-specs {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.spec-lbl {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.spec-val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.spec-val.accent {
+  color: var(--accent);
+  text-shadow: 0 0 20px var(--accent-glow);
+}
+
+.spec-val.green {
+  color: var(--green);
+  text-shadow: 0 0 15px var(--green-glow);
+}
+
+.top-img-side {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.5rem;
+}
+
+.score-ring {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 4px solid var(--accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(230, 57, 70, 0.1);
+  box-shadow: 0 0 30px var(--accent-glow);
+  flex-shrink: 0;
+}
+
+.score-num {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+  text-shadow: 0 0 20px var(--accent-glow);
+}
+
+.score-lbl {
+  font-size: .6rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.top-motor-img {
+  width: 300px;
+  height: 180px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
+}
+
+/* ==================== INSIGHT STRIP ==================== */
+.insight-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.insight-card {
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  transition: all .3s ease;
+}
+
+.insight-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(0,0,0,0.4), 0 0 20px rgba(230, 57, 70, 0.1);
+}
+
+.insight-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.insight-lbl {
+  font-size: .65rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.insight-val {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ==================== RANK SECTION ==================== */
+.rank-section-title {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rank-section-title span {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.rank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.rank-card {
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all .4s ease;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.rank-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.5), 0 0 30px var(--accent-glow);
+}
+
+.rank-img {
+  background: linear-gradient(135deg, var(--bg), var(--bg3));
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.rank-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 1rem;
+}
+
+.rank-num-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  padding: 4px 12px;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px var(--accent-glow);
+}
+
+.rank-body {
+  padding: 1rem;
+}
+
+.rank-name {
+  font-size: .9rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.rank-price {
+  font-size: .85rem;
+  color: var(--gold);
+  margin-bottom: 12px;
+  font-weight: 600;
+  text-shadow: 0 0 10px var(--gold-glow);
+}
+
+.rank-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rank-bar-label {
+  font-size: .6rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rank-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg);
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.rank-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .6s ease;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.rank-pct {
+  font-size: .75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+/* ==================== SAW SECTION ==================== */
+.saw-section {
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  margin-bottom: 2.5rem;
+  overflow: hidden;
+  box-shadow: 0 15px 50px rgba(0,0,0,0.4);
+}
+
+.saw-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: rgba(0,0,0,0.2);
+}
+
+.saw-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.saw-sub {
+  font-size: .8rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.saw-badge {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: rgba(230, 57, 70, 0.15);
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  color: var(--accent);
+  padding: 6px 14px;
+  border-radius: 50px;
+  box-shadow: 0 0 15px rgba(230, 57, 70, 0.2);
+}
+
+.saw-weights {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  background: rgba(0,0,0,0.1);
+}
+
+.w-chip {
+  font-size: .72rem;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.03);
+  padding: 6px 14px;
+  border-radius: 50px;
+  border: 1px solid var(--border);
+}
+
+.w-chip strong {
+  color: #ffffff;
+}
+
+.saw-table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .85rem;
+}
+
+thead tr {
+  background: rgba(0,0,0,0.3);
+}
+
+th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+th small {
+  font-weight: 400;
+  text-transform: none;
+  font-size: .75em;
+  color: var(--muted);
+}
+
+td {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+}
+
+tr:hover td {
+  background: rgba(230, 57, 70, 0.05);
+}
+
+.skor-cell {
+  font-weight: 700;
+}
+
+.best-val {
+  color: var(--green);
+  font-weight: 700;
+  text-shadow: 0 0 10px var(--green-glow);
+}
+
+/* ==================== SAW TABS ==================== */
+.saw-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.saw-tab {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 8px 18px;
+  border-radius: 50px;
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .3s ease;
+  white-space: nowrap;
+}
+
+.saw-tab:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.saw-tab.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+
+.saw-tab-hidden {
+  display: none;
+}
+
+.saw-chart-inner {
+  padding: 1.5rem;
+}
+
+.saw-chart-inner canvas {
+  max-height: 360px;
+  width: 100% !important;
+}
+
+/* ==================== ACTION BAR ==================== */
+.action-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 900px) {
+  .top-rec-inner {
+    grid-template-columns: 1fr;
+  }
+  .top-img-side {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+  .rank-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .insight-strip {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .saw-tabs {
+    width: 100%;
+    order: 3;
+  }
+}
+
+@media (max-width: 600px) {
+  .rank-grid {
+    grid-template-columns: 1fr;
+  }
+  .insight-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .top-name {
+    font-size: 1.8rem;
+  }
+  .hasil-wrap {
+    padding: 2rem 1rem;
+  }
+}

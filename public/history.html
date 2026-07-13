@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riwayat Rekomendasi — MotorMatch</title>
+  <!-- Google Fonts - Clean & Fast -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles/global.css">
+  <link rel="stylesheet" href="assets/styles/home-page.css">
+  <link rel="stylesheet" href="assets/styles/simple-app.css">
+</head>
+<body>
+
+<!-- ===================== NAVBAR ===================== -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <span class="logo font-cruiser" data-page="home">MotorMatch</span>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">☰</button>
+    <div class="nav-links" id="nav-links">
+      <a class="nav-link" data-page="home">Beranda</a>
+      <a class="nav-link go-rec" id="nav-rekomendasi">Rekomendasi</a>
+      <a class="nav-cta active" id="nav-register" href="/history.html">Riwayat</a>
+    </div>
+    <button class="nav-link nav-logout-btn" id="nav-logout" hidden>Logout</button>
+  </div>
+</nav>
+
+<!-- ===================== TOAST ===================== -->
+<div class="toast" id="toast"></div>
+
+<!-- ===================== HISTORY PAGE ===================== -->
+<div id="page-history" class="page active" style="display: block !important; min-height: 100vh; padding-top: calc(var(--nav-h) + 2rem);">
+  <div style="max-width: 1400px; margin: 0 auto; padding: 0 2rem;">
+    <p class="section-label" style="text-align: center; font-size: .72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: .75rem;">Riwayat</p>
+    <h2 class="section-title" style="text-align: center; font-size: 1.8rem; font-weight: 700; margin-bottom: 2rem; color: #ffffff;">Riwayat Rekomendasi Anda</h2>
+    <div id="user-welcome" class="user-welcome-banner"></div>
+
+    <div id="history-loading" class="history-loading">
+      <div class="loading-spinner"></div>
+      <p>Memuat riwayat...</p>
+    </div>
+
+    <div id="history-empty" class="history-empty" style="display: none;">
+      <div class="empty-icon">-</div>
+      <h3>Belum Ada Riwayat</h3>
+      <p>Anda belum memiliki riwayat rekomendasi. Silakan lakukan rekomendasi motor terlebih dahulu.</p>
+      <button class="btn-primary go-rec">Mulai Rekomendasi</button>
+    </div>
+
+    <div id="history-stats" class="history-stats" style="display: none; margin-bottom: 2rem;">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-total">0</div>
+        <div class="stat-label">Total Rekomendasi</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-month">0</div>
+        <div class="stat-label">Bulan Ini</div>
+      </div>
+    </div>
+
+    <div id="history-list" class="history-list" style="display: none;"></div>
+  </div>
+</div>
+
+<!-- ===================== SCRIPTS ===================== -->
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/scripts/auth-service.js"></script>
+<script src="assets/scripts/ui-controller.js"></script>
+<script src="assets/scripts/session-nav.js"></script>
+<script src="assets/scripts/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+  const loadingEl = document.getElementById('history-loading');
+  const emptyEl = document.getElementById('history-empty');
+  const listEl = document.getElementById('history-list');
+  const statsEl = document.getElementById('history-stats');
+  const userWelcomeEl = document.getElementById('user-welcome');
+
+  async function loadHistory() {
+    // Auth service menggunakan localStorage, bukan sessionStorage
+    const token = localStorage.getItem('motormatch_token') || '';
+    if (!token) {
+      loadingEl.style.display = 'none';
+      emptyEl.style.display = 'block';
+      emptyEl.querySelector('h3').textContent = 'Silakan Login Dulu';
+      emptyEl.querySelector('p').textContent = 'Anda harus login terlebih dahulu untuk melihat riwayat rekomendasi.';
+      emptyEl.querySelector('button').outerHTML = '<a class="btn-primary" href="/login.html" style="display:inline-block;text-decoration:none;">Login Sekarang</a>';
+      return;
+    }
+
+    try {
+      // Ambil data user
+      const userRes = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      let userName = 'Pengguna';
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        userName = userData.user?.full_name || 'Pengguna';
+        userWelcomeEl.innerHTML = `
+          <div class="user-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>${userName}</span>
+          </div>
+        `;
+      }
+
+      const res = await fetch('/api/history', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        throw new Error('Gagal mengambil riwayat');
+      }
+
+      const history = await res.json();
+      loadingEl.style.display = 'none';
+
+      if (!history || history.length === 0) {
+        emptyEl.style.display = 'block';
+        statsEl.style.display = 'none';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      statsEl.style.display = 'flex';
+
+      // Update stats
+      document.getElementById('stat-total').textContent = history.length;
+
+      // Count this month
+      const now = new Date();
+      const thisMonth = history.filter(item => {
+        const d = new Date(item.createdAt);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).length;
+      document.getElementById('stat-month').textContent = thisMonth;
+
+      listEl.style.display = 'grid';
+      listEl.style.gridTemplateColumns = 'repeat(auto-fill, minmax(400px, 1fr))';
+      listEl.style.gap = '1.5rem';
+      listEl.style.padding = '1rem';
+
+      history.forEach((item, index) => {
+        const date = new Date(item.createdAt);
+        const dateStr = date.toLocaleDateString('id-ID', {
+          day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+
+        const answers = item.answers || {};
+        const result = item.result || {};
+
+        const budgetLabel = answers.budget === '20000000' ? '< 20 juta' :
+                           answers.budget === '50000000' ? '20 - 50 juta' :
+                           answers.budget === '150000000' ? '50 - 150 juta' : 'No Limit';
+
+        const usageLabel = answers.usage === 'harian' ? 'Harian / Commuting' :
+                          answers.usage === 'touring' ? 'Touring Jarak Jauh' :
+                          answers.usage === 'sport' ? 'Gaya Hidup & Performa' : 'Serbaguna / Keluarga';
+
+        const tipeLabel = answers.tipe === 'Matic' ? 'Matic' :
+                         answers.tipe === 'Sport' ? 'Sport' :
+                         answers.tipe === 'Naked' ? 'Naked' : 'Semua Tipe';
+
+        const prioritasLabel = answers.prioritas === 'harga' ? 'Harga' :
+                              answers.prioritas === 'bbm' ? 'Irit BBM' :
+                              answers.prioritas === 'performa' ? 'Performa' :
+                              answers.prioritas === 'nyaman' ? 'Kenyamanan' : 'Seimbang';
+
+        const ccLabel = answers.cc === 'kecil' ? '≤125cc' :
+                       answers.cc === 'sedang' ? '126-250cc' :
+                       answers.cc === 'besar' ? '251-500cc' :
+                       answers.cc === 'super' ? '>500cc' : '-';
+
+        const tinggiLabel = answers.tinggi === '150' ? '< 155 cm' :
+                           answers.tinggi === '160' ? '155 - 165 cm' :
+                           answers.tinggi === '170' ? '165 - 175 cm' :
+                           answers.tinggi === '180' ? '> 175 cm' : '-';
+
+        const topMotor = item.topMotor ? item.topMotor.name : 'Tidak ada';
+        const top3 = result.top3 || [];
+
+        const card = document.createElement('div');
+        card.className = 'history-card';
+        card.style.cssText = `
+          background: #fff;
+          border-radius: 16px;
+          padding: 1.5rem;
+          border: 1px solid rgba(0,0,0,.08);
+          box-shadow: 0 4px 12px rgba(0,0,0,.06);
+          transition: all .2s;
+        `;
+
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: .75rem;">
+              <span style="background: var(--accent); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .9rem;">${index + 1}</span>
+              <div>
+                <div style="color: var(--text); font-weight: 600; font-size: .85rem;">${userName}</div>
+                <div style="color: var(--muted); font-size: .75rem;">${dateStr}</div>
+              </div>
+            </div>
+            <span style="background: rgba(0,102,255,.1); color: var(--accent); padding: .25rem .75rem; border-radius: 20px; font-size: .7rem; font-weight: 600;">
+              #${index + 1}
+            </span>
+          </div>
+
+          <div style="margin-bottom: 1.25rem;">
+            <h4 style="font-size: .8rem; color: var(--muted); margin-bottom: .25rem; text-transform: uppercase; letter-spacing: 1px;">Rekomendasi Teratas</h4>
+            <p style="font-weight: 700; color: var(--accent); font-size: 1.15rem; margin: 0;">${topMotor}</p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; font-size: .8rem; margin-bottom: 1rem;">
+            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
+              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Anggaran</span>
+              <span style="font-weight: 600; color: var(--text);">${budgetLabel}</span>
+            </div>
+            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
+              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Penggunaan</span>
+              <span style="font-weight: 600; color: var(--text);">${usageLabel}</span>
+            </div>
+            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
+              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Tipe</span>
+              <span style="font-weight: 600; color: var(--text);">${tipeLabel}</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; font-size: .8rem; margin-bottom: 1rem;">
+            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
+              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Prioritas</span>
+              <span style="font-weight: 600; color: var(--text);">${prioritasLabel}</span>
+            </div>
+            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
+              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Kapasitas CC</span>
+              <span style="font-weight: 600; color: var(--text);">${ccLabel}</span>
+            </div>
+            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
+              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Tinggi Badan</span>
+              <span style="font-weight: 600; color: var(--text);">${tinggiLabel}</span>
+            </div>
+          </div>
+
+          ${top3.length > 0 ? `
+          <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+            <span style="color: var(--muted); font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Top 3 Pilihan:</span>
+            <div style="margin-top: .6rem; display: flex; flex-wrap: wrap; gap: .5rem;">
+              ${top3.map((m, i) => `
+                <span style="background: ${i === 0 ? 'var(--accent)' : 'var(--bg)'}; color: ${i === 0 ? '#fff' : 'var(--text)'}; padding: .4rem .85rem; border-radius: 20px; font-size: .75rem; font-weight: 600;">
+                  ${i + 1}. ${m.brand} ${m.model}
+                </span>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+            <button class="btn-ghost btn-sm" onclick="deleteHistory(${item.id})" style="font-size: .75rem; padding: .35rem .75rem;">
+              Hapus Riwayat
+            </button>
+          </div>
+        `;
+
+        listEl.appendChild(card);
+      });
+
+    } catch (error) {
+      console.error('Error loading history:', error);
+      loadingEl.style.display = 'none';
+      emptyEl.style.display = 'block';
+      emptyEl.querySelector('h3').textContent = 'Gagal Memuat';
+      emptyEl.querySelector('p').textContent = 'Terjadi kesalahan saat memuat riwayat. Silakan coba lagi.';
+    }
+  }
+
+  // Delete history function
+  window.deleteHistory = async function(id) {
+    if (!confirm('Hapus riwayat ini?')) return;
+
+    const token = localStorage.getItem('motormatch_token') || '';
+    try {
+      const res = await fetch('/api/history', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ id })
+      });
+
+      if (res.ok) {
+        showToast('Riwayat berhasil dihapus');
+        loadHistory();
+      } else {
+        showToast('Gagal menghapus riwayat');
+      }
+    } catch (e) {
+      showToast('Gagal menghapus riwayat');
+    }
+  };
+
+  // Toast function
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  loadHistory();
+});
+
+// Tombol Mulai Rekomendasi dari halaman kosong
+document.body.addEventListener('click', e => {
+  const t = e.target;
+  // Tombol rekomendasi
+  if (t.closest('.go-rec')) {
+    goToRecommendation();
+    return;
+  }
+  // Hamburger menu
+  if (t.closest('#nav-hamburger')) {
+    document.getElementById('nav-links').classList.toggle('open');
+    return;
+  }
+  // Logo -> beranda
+  if (t.closest('.logo')) {
+    location.href = '/index.html';
+    return;
+  }
+  // Logout
+  if (t.closest('#nav-logout')) {
+    if (window.Auth) Auth.logout();
+    return;
+  }
+});
+</script>
+
+<style>
+/* History page dark theme overrides */
+.history-loading {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin: 0 auto 1.25rem;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.history-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
+  border: 1px solid var(--border);
+  border-radius: 24px;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1.25rem;
+}
+
+.history-empty h3 {
+  font-size: 1.5rem;
+  margin-bottom: .75rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.history-empty p {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.history-card {
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  transition: all .3s ease;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.history-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px var(--accent-glow);
+}
+
+.user-welcome-banner {
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+}
+
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .75rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  padding: .75rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 8px 25px var(--accent-glow);
+}
+
+.user-badge svg {
+  width: 20px;
+  height: 20px;
+}
+
+.history-stats {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+
+.stat-card {
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.5rem 2.5rem;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  min-width: 140px;
+}
+
+.stat-num {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  text-shadow: 0 0 30px var(--accent-glow);
+  line-height: 1;
+  margin-bottom: .5rem;
+}
+
+.stat-label {
+  font-size: .82rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.btn-sm {
+  font-size: .78rem;
+  padding: .5rem 1rem;
+}
+
+.history-list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* Dark mode overrides for history content */
+.history-card [style*="color: var(--text)"] {
+  color: #ffffff !important;
+}
+
+.history-card [style*="color: var(--muted)"] {
+  color: var(--text-secondary) !important;
+}
+
+.history-card [style*="background: var(--bg)"] {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+.history-card [style*="background: var(--accent)"] {
+  background: linear-gradient(135deg, var(--accent), var(--accent2)) !important;
+}
+
+/* No-result state */
+#history-empty .empty-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .history-stats {
+    flex-direction: column;
+    align-items: center;
+  }
+  .history-list {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+
+</body>
+</html>
