@@ -6,6 +6,18 @@
 node_modules/
 package-lock.json
 
+# Motor Images (large binary files)
+# Download images separately from the images repository
+public/assets/images/*.jpg
+public/assets/images/*.jpeg
+public/assets/images/*.png
+public/assets/images/*.jfif
+public/assets/images/*.gif
+# Keep README and placeholder
+!public/assets/images/README.md
+!public/assets/images/.gitkeep
+!public/assets/images/placeholder.svg
+
 # Environment variables (local credentials)
 .env
 .env.local
