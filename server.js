@@ -6,6 +6,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const db = require('./backend/database/database-service.js');
+const sawService = require('./backend/services/saw-service.js');
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -388,6 +389,71 @@ async function handleAPI(req, res) {
       } catch (error) {
         console.error('[Save history error]', error.message);
         return sendError(res, 500, 'Gagal menyimpan riwayat');
+      }
+    }
+
+    // ── SAW Recommendation Endpoint ─────────────────────────────────────────────
+    if (pathname === '/api/recommend') {
+      if (req.method !== 'POST') return sendError(res, 405, 'Method tidak diizinkan');
+
+      try {
+        const payload = await readJSONBody(req);
+
+        // Validasi input required
+        const requiredFields = ['budget', 'usage', 'tipe', 'prioritas', 'cc', 'tinggi'];
+        const missingFields = requiredFields.filter(f => !(f in payload));
+        if (missingFields.length > 0) {
+          return sendError(res, 400, `Missing required field(s): ${missingFields.join(', ')}`);
+        }
+
+        // Ambil data motor dari database
+        let motors;
+        try {
+          motors = await db.getAllMotors();
+        } catch (dbError) {
+          console.error('[Recommend] Database error, using local data:', dbError.message);
+          // Fallback ke data lokal jika database gagal
+          motors = db.MOTORS_RAW;
+        }
+
+        // Jalankan SAW
+        const result = sawService.runSAW(payload, motors);
+
+        return sendJSON(res, 200, result);
+      } catch (error) {
+        console.error('[Recommend error]', error.message);
+        return sendError(res, 500, 'Gagal menghitung rekomendasi');
+      }
+    }
+
+    // ── SAW Debug Endpoint (for development) ───────────────────────────────────
+    if (pathname === '/api/recommend/debug') {
+      if (req.method !== 'POST') return sendError(res, 405, 'Method tidak diizinkan');
+
+      try {
+        const payload = await readJSONBody(req);
+
+        // Ambil data motor
+        let motors;
+        try {
+          motors = await db.getAllMotors();
+        } catch (dbError) {
+          motors = db.MOTORS_RAW;
+        }
+
+        // Jalankan SAW dengan debug info
+        const result = sawService.runSAW(payload, motors);
+
+        // Tambahkan detail perhitungan
+        result._debug = {
+          motorCount: motors.length,
+          serverTime: new Date().toISOString(),
+        };
+
+        return sendJSON(res, 200, result);
+      } catch (error) {
+        console.error('[Recommend debug error]', error.message);
+        return sendError(res, 500, 'Gagal menghitung rekomendasi');
       }
     }
 
