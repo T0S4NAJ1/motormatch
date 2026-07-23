@@ -7,11 +7,6 @@ node_modules/
 
 # Motor Images (large binary files)
 # Download images separately from the images repository
-public/assets/images/*.jpg
-public/assets/images/*.jpeg
-public/assets/images/*.png
-public/assets/images/*.jfif
-public/assets/images/*.gif
 # Keep README and placeholder
 !public/assets/images/README.md
 !public/assets/images/.gitkeep
