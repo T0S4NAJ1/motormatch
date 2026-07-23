@@ -10,27 +10,20 @@ const Wizard = (() => {
 
     const budget = answers.budget;
 
-    // Base choices for small budgets (no 500CC up option)
-    const baseChoices = [
-      { title:'Kecil (≤125cc)',    sub:'Sangat irit BBM, ideal dalam kota',     value:'kecil' },
-      { title:'Menengah (126–250cc)', sub:'Balance power & efisiensi, serbaguna', value:'sedang' },
-      { title:'Besar (≤250cc)',    sub:'Performa tinggi, maksimal 250cc',       value:'sedang' },
+    // Choices dengan 4 opsi CC
+    const allChoices = [
+      { title:'100 – 150 cc',  sub:'Ideal untuk harian & irit BBM',     value:'kecil1' },
+      { title:'150 – 250 cc',  sub:'Harian & performa seimbang',        value:'kecil2' },
+      { title:'250 – 600 cc',  sub:'Performa sedang & sport ringan',    value:'sedang' },
+      { title:'600 – 1000 cc', sub:'Performa tinggi & touring nyaman', value:'besar' },
     ];
 
-    // Extended choices for budget > 50 million (add 500CC up option)
-    const extendedChoices = [
-      { title:'Kecil (≤125cc)',    sub:'Sangat irit BBM, ideal dalam kota',     value:'kecil' },
-      { title:'Menengah (126–250cc)', sub:'Balance power & efisiensi, serbaguna', value:'sedang' },
-      { title:'Besar (251–500cc)', sub:'Performa tinggi, touring & daily use', value:'sedang' },
-      { title:'500CC Up',         sub:'Superbike & big bike experience',       value:'besar' },
-    ];
-
-    // Show 500CC up option only for budget > 50 million (50-150jt or No Limit)
-    if (budget === '150000000' || budget === 'null') {
-      return extendedChoices;
+    // Sembunyikan 250-600cc dan 600-1000cc jika budget < 20jt
+    if (budget === '20000000') {
+      return allChoices.filter(c => c.value !== 'sedang' && c.value !== 'besar');
     }
 
-    return baseChoices;
+    return allChoices;
   }
 
   function getValidAnswerValue(q) {
@@ -144,3 +137,7 @@ const Wizard = (() => {
 
   return { renderStep, next, back, reset, initEvents };
 })();
+
+// FIX: Expose ke window agar bisa dicek window.Wizard di main.js
+// (const Wizard ≠ window.Wizard — tanpa baris ini wizard tidak pernah dirender!)
+window.Wizard = Wizard;

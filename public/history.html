@@ -23,6 +23,7 @@
     <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">☰</button>
     <div class="nav-links" id="nav-links">
       <a class="nav-link" data-page="home">Beranda</a>
+      <a class="nav-link" data-page="katalog">Katalog</a>
       <a class="nav-link go-rec" id="nav-rekomendasi">Rekomendasi</a>
       <a class="nav-cta active" id="nav-register" href="/history.html">Riwayat</a>
     </div>
@@ -38,7 +39,7 @@
   <div style="max-width: 1400px; margin: 0 auto; padding: 0 2rem;">
     <p class="section-label" style="text-align: center; font-size: .72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: .75rem;">Riwayat</p>
     <h2 class="section-title" style="text-align: center; font-size: 1.8rem; font-weight: 700; margin-bottom: 2rem; color: #ffffff;">Riwayat Rekomendasi Anda</h2>
-    <div id="user-welcome" class="user-welcome-banner"></div>
+    <div id="user-welcome" class="user-welcome-banner" style="text-align: center;"></div>
 
     <div id="history-loading" class="history-loading">
       <div class="loading-spinner"></div>
@@ -149,6 +150,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       listEl.style.gridTemplateColumns = 'repeat(auto-fill, minmax(400px, 1fr))';
       listEl.style.gap = '1.5rem';
       listEl.style.padding = '1rem';
+      listEl.innerHTML = ''; // FIX: Bersihkan dulu sebelum render ulang (cegah double saat hapus!)
 
       history.forEach((item, index) => {
         const date = new Date(item.createdAt);
@@ -176,10 +178,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                               answers.prioritas === 'performa' ? 'Performa' :
                               answers.prioritas === 'nyaman' ? 'Kenyamanan' : 'Seimbang';
 
-        const ccLabel = answers.cc === 'kecil' ? '≤125cc' :
-                       answers.cc === 'sedang' ? '126-250cc' :
-                       answers.cc === 'besar' ? '251-500cc' :
-                       answers.cc === 'super' ? '>500cc' : '-';
+        const ccLabelMap = {
+          kecil1: '100–150cc',
+          kecil2: '151–250cc',
+          sedang: '251–600cc',
+          besar: '601–1000cc'
+        };
+        const ccLabel = ccLabelMap[answers.cc] || 'Semua';
 
         const tinggiLabel = answers.tinggi === '150' ? '< 155 cm' :
                            answers.tinggi === '160' ? '155 - 165 cm' :
@@ -191,70 +196,65 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const card = document.createElement('div');
         card.className = 'history-card';
-        card.style.cssText = `
-          background: #fff;
-          border-radius: 16px;
-          padding: 1.5rem;
-          border: 1px solid rgba(0,0,0,.08);
-          box-shadow: 0 4px 12px rgba(0,0,0,.06);
-          transition: all .2s;
-        `;
+        // FIX: data-history-id untuk bisa langsung remove tanpa reload
+        card.dataset.historyId = item.id;
+        card.dataset.createdAt = item.createdAt;
 
         card.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
             <div style="display: flex; align-items: center; gap: .75rem;">
               <span style="background: var(--accent); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .9rem;">${index + 1}</span>
               <div>
-                <div style="color: var(--text); font-weight: 600; font-size: .85rem;">${userName}</div>
-                <div style="color: var(--muted); font-size: .75rem;">${dateStr}</div>
+                <div style="color: #e8e8e8; font-weight: 600; font-size: .85rem;">${userName}</div>
+                <div style="color: #9ca3af; font-size: .75rem;">${dateStr}</div>
               </div>
             </div>
-            <span style="background: rgba(0,102,255,.1); color: var(--accent); padding: .25rem .75rem; border-radius: 20px; font-size: .7rem; font-weight: 600;">
+            <span style="background: rgba(255,80,80,.15); color: var(--accent); padding: .25rem .75rem; border-radius: 20px; font-size: .7rem; font-weight: 600;">
               #${index + 1}
             </span>
           </div>
 
           <div style="margin-bottom: 1.25rem;">
-            <h4 style="font-size: .8rem; color: var(--muted); margin-bottom: .25rem; text-transform: uppercase; letter-spacing: 1px;">Rekomendasi Teratas</h4>
+            <h4 style="font-size: .8rem; color: #9ca3af; margin-bottom: .25rem; text-transform: uppercase; letter-spacing: 1px;">Rekomendasi Teratas</h4>
             <p style="font-weight: 700; color: var(--accent); font-size: 1.15rem; margin: 0;">${topMotor}</p>
           </div>
 
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; font-size: .8rem; margin-bottom: 1rem;">
-            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
-              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Anggaran</span>
-              <span style="font-weight: 600; color: var(--text);">${budgetLabel}</span>
+            <div style="background: rgba(255,255,255,0.04); padding: .6rem .75rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: #9ca3af; display: block; font-size: .7rem; margin-bottom: .15rem;">Anggaran</span>
+              <span style="font-weight: 600; color: #e8e8e8;">${budgetLabel}</span>
             </div>
-            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
-              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Penggunaan</span>
-              <span style="font-weight: 600; color: var(--text);">${usageLabel}</span>
+            <div style="background: rgba(255,255,255,0.04); padding: .6rem .75rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: #9ca3af; display: block; font-size: .7rem; margin-bottom: .15rem;">Penggunaan</span>
+              <span style="font-weight: 600; color: #e8e8e8;">${usageLabel}</span>
             </div>
-            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
-              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Tipe</span>
-              <span style="font-weight: 600; color: var(--text);">${tipeLabel}</span>
+            <div style="background: rgba(255,255,255,0.04); padding: .6rem .75rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: #9ca3af; display: block; font-size: .7rem; margin-bottom: .15rem;">Tipe</span>
+              <span style="font-weight: 600; color: #e8e8e8;">${tipeLabel}</span>
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; font-size: .8rem; margin-bottom: 1rem;">
-            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
-              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Prioritas</span>
-              <span style="font-weight: 600; color: var(--text);">${prioritasLabel}</span>
+            <div style="background: rgba(255,255,255,0.04); padding: .6rem .75rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: #9ca3af; display: block; font-size: .7rem; margin-bottom: .15rem;">Prioritas</span>
+              <span style="font-weight: 600; color: #e8e8e8;">${prioritasLabel}</span>
             </div>
-            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
-              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Kapasitas CC</span>
-              <span style="font-weight: 600; color: var(--text);">${ccLabel}</span>
+            <div style="background: rgba(255,255,255,0.04); padding: .6rem .75rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: #9ca3af; display: block; font-size: .7rem; margin-bottom: .15rem;">Kapasitas CC</span>
+              <span style="font-weight: 600; color: #e8e8e8;">${ccLabel}</span>
             </div>
-            <div style="background: var(--bg); padding: .6rem .75rem; border-radius: 10px;">
-              <span style="color: var(--muted); display: block; font-size: .7rem; margin-bottom: .15rem;">Tinggi Badan</span>
-              <span style="font-weight: 600; color: var(--text);">${tinggiLabel}</span>
+            <div style="background: rgba(255,255,255,0.04); padding: .6rem .75rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: #9ca3af; display: block; font-size: .7rem; margin-bottom: .15rem;">Tinggi Badan</span>
+              <span style="font-weight: 600; color: #e8e8e8;">${tinggiLabel}</span>
             </div>
           </div>
 
           ${top3.length > 0 ? `
-          <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-            <span style="color: var(--muted); font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Top 3 Pilihan:</span>
+          <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08);">
+            <span style="color: #9ca3af; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Top 3 Pilihan:</span>
             <div style="margin-top: .6rem; display: flex; flex-wrap: wrap; gap: .5rem;">
               ${top3.map((m, i) => `
-                <span style="background: ${i === 0 ? 'var(--accent)' : 'var(--bg)'}; color: ${i === 0 ? '#fff' : 'var(--text)'}; padding: .4rem .85rem; border-radius: 20px; font-size: .75rem; font-weight: 600;">
+                <span style="background: ${i === 0 ? 'var(--accent)' : 'rgba(255,255,255,0.06)'}; color: ${i === 0 ? '#fff' : '#e8e8e8'}; padding: .4rem .85rem; border-radius: 20px; font-size: .75rem; font-weight: 600; border: 1px solid ${i === 0 ? 'transparent' : 'rgba(255,255,255,0.1)'};">
                   ${i + 1}. ${m.brand} ${m.model}
                 </span>
               `).join('')}
@@ -262,9 +262,9 @@ document.addEventListener('DOMContentLoaded', async function() {
           </div>
           ` : ''}
 
-          <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
-            <button class="btn-ghost btn-sm" onclick="deleteHistory(${item.id})" style="font-size: .75rem; padding: .35rem .75rem;">
-              Hapus Riwayat
+          <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+            <button class="btn-ghost btn-sm" onclick="deleteHistory(${item.id})" style="font-size: .75rem; padding: .35rem .75rem; color: #9ca3af; border-color: rgba(255,255,255,0.1);">
+              🗑 Hapus Riwayat
             </button>
           </div>
         `;
@@ -282,9 +282,43 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   // Delete history function
+  // FIX: Langsung hapus dari DOM (animasi fade out) tanpa nunggu reload page
   window.deleteHistory = async function(id) {
     if (!confirm('Hapus riwayat ini?')) return;
 
+    // 1. Langsung cari dan animasikan hilangnya card
+    const cardEl = listEl.querySelector('[data-history-id="' + id + '"]');
+    if (cardEl) {
+      cardEl.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      cardEl.style.opacity = '0';
+      cardEl.style.transform = 'scale(0.95)';
+
+      setTimeout(function() {
+        cardEl.remove();
+
+        // 2. Cek sisa card — tampilkan empty state jika kosong
+        const remaining = listEl.querySelectorAll('.history-card');
+        if (remaining.length === 0) {
+          listEl.style.display = 'none';
+          statsEl.style.display = 'none';
+          emptyEl.style.display = 'block';
+        } else {
+          // 3. Update angka stats langsung (tanpa fetch ulang)
+          document.getElementById('stat-total').textContent = remaining.length;
+          const now = new Date();
+          let monthCount = 0;
+          remaining.forEach(function(el) {
+            const d = new Date(el.dataset.createdAt);
+            if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+              monthCount++;
+            }
+          });
+          document.getElementById('stat-month').textContent = monthCount;
+        }
+      }, 300);
+    }
+
+    // 4. Kirim DELETE ke API di background
     const token = localStorage.getItem('motormatch_token') || '';
     try {
       const res = await fetch('/api/history', {
@@ -297,13 +331,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       });
 
       if (res.ok) {
-        showToast('Riwayat berhasil dihapus');
-        loadHistory();
+        showToast('✓ Riwayat berhasil dihapus');
       } else {
-        showToast('Gagal menghapus riwayat');
+        showToast('Gagal menghapus — coba reload halaman');
+        loadHistory(); // Restore jika API gagal
       }
     } catch (e) {
-      showToast('Gagal menghapus riwayat');
+      showToast('Koneksi gagal — coba reload halaman');
+      loadHistory(); // Restore jika koneksi gagal
     }
   };
 
@@ -323,7 +358,13 @@ document.body.addEventListener('click', e => {
   const t = e.target;
   // Tombol rekomendasi
   if (t.closest('.go-rec')) {
-    goToRecommendation();
+    e.preventDefault();
+    const token = localStorage.getItem('motormatch_token');
+    if (token) {
+      location.href = '/index.html?page=wizard';
+    } else {
+      location.href = '/login.html?next=' + encodeURIComponent('/index.html?page=wizard');
+    }
     return;
   }
   // Hamburger menu
@@ -336,9 +377,20 @@ document.body.addEventListener('click', e => {
     location.href = '/index.html';
     return;
   }
+  // Nav: Beranda
+  if (t.closest('[data-page="home"]')) {
+    location.href = '/index.html';
+    return;
+  }
+  // Nav: Katalog — buka index.html lalu tampilkan section katalog
+  if (t.closest('[data-page="katalog"]')) {
+    location.href = '/index.html?page=katalog';
+    return;
+  }
   // Logout
   if (t.closest('#nav-logout')) {
-    if (window.Auth) Auth.logout();
+    localStorage.removeItem('motormatch_token');
+    location.href = '/login.html';
     return;
   }
 });

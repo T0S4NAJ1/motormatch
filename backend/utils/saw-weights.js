@@ -155,8 +155,8 @@ class SAWWeightCalculator {
    */
   constructor(answers = {}) {
     this.answers = answers;
+    this.adjustmentLog = [];  // Initialize BEFORE _calculateWeights()
     this.weights = this._calculateWeights();
-    this.adjustmentLog = [];
   }
 
   /**

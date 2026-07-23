@@ -34,8 +34,8 @@ const motors = [
     power:217.6, torque:113.0, weight:201, seat_h:830, fuel_l:16.1, harga:700000000, bbm:10.0, nyaman:5, img:'assets/images/honda_cbr_1000rr_r.jpg' },
 
   // Honda Naked - dari dataset
-  { id:15, brand:'Honda',  model:'CB125R',         year:2021, category:'Naked', cc:125,
-    power:11.0, torque:11.6, weight:129, seat_h:816, fuel_l:10.1, harga:41000000, bbm:45.0, nyaman:7, img:'assets/images/honda_cb125r.jpg' },
+  { id:15, brand:'Honda',  model:'CB150R',         year:2022, category:'Naked', cc:149,
+    power:15.6, torque:13.8, weight:126, seat_h:795, fuel_l:8.0, harga:35000000, bbm:42.0, nyaman:8, img:'assets/images/honda_cb150r.jpg' },
   { id:16, brand:'Honda',  model:'CB 200X',        year:2022, category:'Naked', cc:184,
     power:12.4, torque:16.1, weight:155, seat_h:810, fuel_l:12.0, harga:45000000, bbm:38.0, nyaman:8, img:'assets/images/Honda_CB200X_4.jpg' },
   { id:17, brand:'Honda',  model:'CB 300R',         year:2019, category:'Naked', cc:286,
@@ -46,6 +46,10 @@ const motors = [
     power:87.0, torque:63.0, weight:206, seat_h:810, fuel_l:15.4, harga:250000000, bbm:15.0, nyaman:8, img:'assets/images/honda_cb_650r.jpg' },
   { id:20, brand:'Honda',  model:'CB 1000R',       year:2021, category:'Naked', cc:998,
     power:107.0, torque:104.0, weight:213, seat_h:830, fuel_l:16.2, harga:450000000, bbm:12.0, nyaman:7, img:'assets/images/honda_cb_1000r.jpg' },
+
+  // Honda Cruiser
+  { id:42, brand:'Honda',  model:'NSR 125',      year:2003, category:'Sport', cc:125,
+    power:15.0, torque:12.0, weight:118, seat_h:785, fuel_l:12.0, harga:35000000, bbm:38.0, nyaman:6, img:'assets/images/honda_nsr_125.jpg' },
 
   // Yamaha Matic - dari dataset
   { id:21, brand:'Yamaha', model:'Mio i125',       year:2022, category:'Matic', cc:125,
@@ -80,8 +84,6 @@ const motors = [
     power:74.0, torque:68.0, weight:188, seat_h:805, fuel_l:14.0, harga:220000000, bbm:18.0, nyaman:8, img:'assets/images/yamaha_mt_07.jpg' },
   { id:35, brand:'Yamaha', model:'MT-09',          year:2022, category:'Naked', cc:889,
     power:119.0, torque:93.0, weight:193, seat_h:825, fuel_l:14.0, harga:310000000, bbm:14.0, nyaman:8, img:'assets/images/yamaha_mt_09.jpg' },
-  { id:36, brand:'Yamaha', model:'XSR 155',        year:2022, category:'Naked', cc:155,
-    power:12.2, torque:14.7, weight:134, seat_h:790, fuel_l:10.5, harga:34500000, bbm:45.0, nyaman:8, img:'assets/images/yamaha_xsr_155.jpg' },
 
   // Yamaha Sport - dari dataset
   { id:37, brand:'Yamaha', model:'R15 V2',         year:2014, category:'Sport', cc:149,

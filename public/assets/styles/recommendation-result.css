@@ -209,8 +209,11 @@
 }
 
 .insight-icon {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: var(--accent);
+  font-family: monospace;
 }
 
 .insight-lbl {

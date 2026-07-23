@@ -14,16 +14,13 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 // CORS: specific origin, bukan wildcard
 const ALLOWED_ORIGIN = process.env.CORS_ORIGIN || '*';
 
-// Rate limiting untuk brute force protection
+// Rate limiting — dilonggarkan agar pengguna tidak terkunci
 const loginAttempts = new Map();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 menit
-const MAX_LOGIN_ATTEMPTS = 5;
+const RATE_LIMIT_WINDOW = 1 * 60 * 1000; // 1 menit
+const MAX_LOGIN_ATTEMPTS = 20; // maksimal 20 percobaan per menit
 
 // Request timeout
 const REQUEST_TIMEOUT = 30000; // 30 detik
-
-// Status database - diakses dari handleAPI
-let _dbReady = false;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -188,7 +185,7 @@ async function handleAPI(req, res) {
         });
         return res.end(JSON.stringify({
           error: true,
-          message: `Terlalu banyak percobaan login. Silakan coba lagi dalam ${Math.ceil(retryAfter / 60)} menit.`,
+          message: `Terlalu banyak percobaan login. Silakan coba lagi dalam ${retryAfter} detik.`,
         }));
       }
 
@@ -510,18 +507,15 @@ const server = http.createServer((req, res) => {
 
   try {
     await db.init();
-    _dbReady = true;
     console.log('  ✅ Auto setup database selesai');
   } catch (error) {
-    console.error(`  ❌ Auto setup MySQL gagal: ${error.message}`);
-    console.log('  Frontend tetap bisa dibuka dalam mode data lokal.');
-    console.log('  Cek XAMPP/Laragon/MySQL dan file .env jika ingin mode database.');
+    console.error(`  ⚠️  Auto setup: ${error.message}`);
+    console.log('  Sistem berjalan dalam mode lokal.');
   }
 
   server.listen(PORT, () => {
     console.log(`Server aktif: http://localhost:${PORT}`);
-    console.log(`API health:  http://localhost:${PORT}/api/health`);
-    console.log(`Mode data:   ${_dbReady ? 'MySQL aktif' : 'Lokal/fallback'}\n`);
+    console.log(`Mode data:   ${db.isDbReady() ? 'MySQL aktif' : 'Lokal/fallback'}\n`);
   });
 })();
 

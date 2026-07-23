@@ -3,7 +3,7 @@
 console.log('ui-controller.js loaded');
 
 // PERBAIKAN BUG: fungsi showPage tidak pernah didefinisikan sebelumnya,
-// padahal dipanggil di app.js, recommendation-result.js, dan user-dashboard.js.
+// padahal dipanggil di app.js dan recommendation-result.js.
 // Akibatnya, setelah SAW selesai menghitung, showPage('hasil') melempar
 // ReferenceError yang membuat hasil rekomendasi tertimpa pesan error.
 window.showPage = function(name) {
@@ -129,4 +129,173 @@ window.openModal = function(id) {
   }
 };
 
-console.log('openModal and testClick functions defined');
+// ==================== SPEC WIZARD MODAL ====================
+
+window.openSpecWizardFromCard = function(cardEl) {
+  var m;
+  try {
+    var data = cardEl.getAttribute('data-motor');
+    if (data) {
+      m = JSON.parse(data);
+    }
+  } catch(e) {
+    console.error('Error parsing motor data:', e);
+    return;
+  }
+
+  if (!m) {
+    console.error('Motor data not found');
+    return;
+  }
+
+  console.log('Opening spec wizard for:', m.brand, m.model);
+
+  // Set header info
+  var brandEl = document.getElementById('wizard-brand');
+  var nameEl = document.getElementById('wizard-name');
+  var yearEl = document.getElementById('wizard-year');
+  if (brandEl) brandEl.textContent = m.brand;
+  if (nameEl) nameEl.textContent = m.model;
+  if (yearEl) yearEl.textContent = 'Tahun ' + m.year;
+
+  // Set image
+  var imgEl = document.getElementById('wizard-img');
+  if (imgEl) {
+    imgEl.src = m.img || 'assets/images/placeholder.svg';
+    imgEl.alt = m.brand + ' ' + m.model;
+    imgEl.onerror = function() { this.src = 'assets/images/placeholder.svg'; };
+  }
+
+  // Build specs grid
+  var specsContainer = document.getElementById('wizard-specs');
+  if (specsContainer) {
+    specsContainer.innerHTML = '' +
+      '<div class="spec-wizard-item highlight">' +
+        '<div class="spec-wizard-icon">$</div>' +
+        '<div class="spec-wizard-label">Harga</div>' +
+        '<div class="spec-wizard-value price">Rp ' + window.formatRupiah(m.harga) + '</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">*</div>' +
+        '<div class="spec-wizard-label">Kapasitas CC</div>' +
+        '<div class="spec-wizard-value accent">' + m.cc + ' cc</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">~</div>' +
+        '<div class="spec-wizard-label">Efisiensi BBM</div>' +
+        '<div class="spec-wizard-value success">' + m.bbm + ' km/L</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">_</div>' +
+        '<div class="spec-wizard-label">Tinggi Jok</div>' +
+        '<div class="spec-wizard-value">' + m.seat_h + ' mm</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">+</div>' +
+        '<div class="spec-wizard-label">Tenaga</div>' +
+        '<div class="spec-wizard-value">' + m.power + ' HP</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">x</div>' +
+        '<div class="spec-wizard-label">Torsi</div>' +
+        '<div class="spec-wizard-value">' + m.torque + ' Nm</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">#</div>' +
+        '<div class="spec-wizard-label">Berat</div>' +
+        '<div class="spec-wizard-value">' + m.weight + ' kg</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">@</div>' +
+        '<div class="spec-wizard-label">Kapasitas Tangki</div>' +
+        '<div class="spec-wizard-value">' + m.fuel_l + ' L</div>' +
+      '</div>';
+  }
+
+  // Show modal
+  var wizardModal = document.getElementById('specWizardModal');
+  if (wizardModal) {
+    wizardModal.classList.add('open');
+  }
+};
+
+window.openSpecWizard = function(id) {
+  var m = (window.MOTORS || []).find(function(x) { return x.id === id; });
+  if (!m) {
+    console.error('Motor not found for wizard:', id);
+    return;
+  }
+
+  console.log('Opening spec wizard for:', m.brand, m.model);
+
+  // Set header info
+  document.getElementById('wizard-brand').textContent = m.brand;
+  document.getElementById('wizard-name').textContent = m.model;
+  document.getElementById('wizard-year').textContent = 'Tahun ' + m.year;
+
+  // Set image
+  var imgEl = document.getElementById('wizard-img');
+  if (imgEl) {
+    imgEl.src = m.img || 'assets/images/placeholder.svg';
+    imgEl.alt = m.brand + ' ' + m.model;
+    imgEl.onerror = function() { this.src = 'assets/images/placeholder.svg'; };
+  }
+
+  // Build specs grid
+  var specsContainer = document.getElementById('wizard-specs');
+  if (specsContainer) {
+    specsContainer.innerHTML = '' +
+      '<div class="spec-wizard-item highlight">' +
+        '<div class="spec-wizard-icon">$</div>' +
+        '<div class="spec-wizard-label">Harga</div>' +
+        '<div class="spec-wizard-value price">Rp ' + window.formatRupiah(m.harga) + '</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">*</div>' +
+        '<div class="spec-wizard-label">Kapasitas CC</div>' +
+        '<div class="spec-wizard-value accent">' + m.cc + ' cc</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">~</div>' +
+        '<div class="spec-wizard-label">Efisiensi BBM</div>' +
+        '<div class="spec-wizard-value success">' + m.bbm + ' km/L</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">_</div>' +
+        '<div class="spec-wizard-label">Tinggi Jok</div>' +
+        '<div class="spec-wizard-value">' + m.seat_h + ' mm</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">+</div>' +
+        '<div class="spec-wizard-label">Tenaga</div>' +
+        '<div class="spec-wizard-value">' + m.power + ' HP</div>' +
+      '</div>' +
+      '<div class="spec-wizard-item">' +
+        '<div class="spec-wizard-icon">x</div>' +
+        '<div class="spec-wizard-label">Torsi</div>' +
+        '<div class="spec-wizard-value">' + m.torque + ' Nm</div>' +
+      '</div>';
+  }
+
+  // Show modal
+  var wizardModal = document.getElementById('specWizardModal');
+  if (wizardModal) {
+    wizardModal.classList.add('open');
+  }
+};
+
+window.closeSpecWizard = function() {
+  var wizardModal = document.getElementById('specWizardModal');
+  if (wizardModal) {
+    wizardModal.classList.remove('open');
+  }
+};
+
+// Close wizard on escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeSpecWizard();
+  }
+});
+
+console.log('openSpecWizard and closeSpecWizard functions defined');

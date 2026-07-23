@@ -14,6 +14,9 @@
   <link rel="stylesheet" href="assets/styles/global.css">
   <link rel="stylesheet" href="assets/styles/home-page.css">
   <link rel="stylesheet" href="assets/styles/simple-app.css">
+  <link rel="stylesheet" href="assets/styles/motor-catalog.css">
+  <link rel="stylesheet" href="assets/styles/recommendation-form.css">
+  <link rel="stylesheet" href="assets/styles/recommendation-result.css">
 </head>
 <body>
 
@@ -24,8 +27,9 @@
     <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">☰</button>
     <div class="nav-links" id="nav-links">
       <a class="nav-link active" data-page="home">Beranda</a>
-      <a class="nav-link go-rec" id="nav-rekomendasi">Rekomendasi</a>
-      <a class="nav-cta" id="nav-register" href="/history.html" style="position: relative; z-index: 10;">Riwayat</a>
+      <a class="nav-link" data-page="katalog">Katalog</a>
+      <a class="nav-link go-rec" id="nav-rekomendasi" data-page="wizard">Rekomendasi</a>
+      <a class="nav-cta" id="nav-register" href="/history.html">Riwayat</a>
     </div>
     <button class="nav-link nav-logout-btn" id="nav-logout" hidden>Logout</button>
   </div>
@@ -33,6 +37,34 @@
 
 <!-- ===================== TOAST + MODAL ===================== -->
 <div class="toast" id="toast"></div>
+
+<!-- Spec Wizard Modal -->
+<div class="spec-wizard-modal" id="specWizardModal">
+  <div class="spec-wizard-card">
+    <div class="spec-wizard-header">
+      <button class="spec-wizard-close" onclick="closeSpecWizard()">✕</button>
+      <div class="spec-wizard-badge">Spesifikasi Motor</div>
+      <div class="spec-wizard-brand" id="wizard-brand"></div>
+      <div class="spec-wizard-name" id="wizard-name"></div>
+      <div class="spec-wizard-year" id="wizard-year"></div>
+    </div>
+    <div class="spec-wizard-img">
+      <img id="wizard-img" src="" alt="Motor">
+    </div>
+    <div class="spec-wizard-body">
+      <div class="spec-wizard-title">Detail Spesifikasi</div>
+      <div class="spec-wizard-grid" id="wizard-specs"></div>
+      <div class="spec-wizard-dots" id="wizard-dots">
+        <div class="spec-wizard-dot active"></div>
+        <div class="spec-wizard-dot"></div>
+        <div class="spec-wizard-dot"></div>
+      </div>
+    </div>
+    <div class="spec-wizard-footer">
+      <div class="spec-wizard-note">*Data spesifikasi dapat berbeda dengan harga OTR atual</div>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="motorModal">
   <div class="modal" role="dialog" aria-modal="true">
@@ -47,60 +79,60 @@
       <div class="modal-img-wrap">
         <img id="modal-img" src="" alt="Foto motor">
       </div>
-      <div class="spec-section-title">📋 Spesifikasi Motor</div>
+      <div class="spec-section-title">SPESIFIKASI MOTOR</div>
       <table class="spec-table" id="modal-specs">
         <tr>
-          <td class="spec-icon">💰</td>
+          <td class="spec-icon">$</td>
           <td class="spec-label">Harga OTR</td>
           <td class="spec-value price" id="spec-harga">-</td>
         </tr>
         <tr>
-          <td class="spec-icon">⚙️</td>
+          <td class="spec-icon">*</td>
           <td class="spec-label">Kapasitas Mesin</td>
           <td class="spec-value" id="spec-cc">-</td>
         </tr>
         <tr>
-          <td class="spec-icon">🐎</td>
+          <td class="spec-icon">+</td>
           <td class="spec-label">Tenaga</td>
           <td class="spec-value" id="spec-power">-</td>
         </tr>
         <tr>
-          <td class="spec-icon">🔧</td>
+          <td class="spec-icon">x</td>
           <td class="spec-label">Torsi</td>
           <td class="spec-value" id="spec-torque">-</td>
         </tr>
         <tr>
-          <td class="spec-icon">⛽</td>
+          <td class="spec-icon">~</td>
           <td class="spec-label">Efisiensi BBM</td>
           <td class="spec-value fuel" id="spec-bbm">-</td>
         </tr>
         <tr>
-          <td class="spec-icon">⚖️</td>
+          <td class="spec-icon">#</td>
           <td class="spec-label">Berat</td>
           <td class="spec-value" id="spec-weight">-</td>
         </tr>
         <tr>
-          <td class="spec-icon">📏</td>
+          <td class="spec-icon">_</td>
           <td class="spec-label">Tinggi Jok</td>
           <td class="spec-value" id="spec-seat">-</td>
         </tr>
         <tr>
-          <td class="spec-icon">🛢️</td>
+          <td class="spec-icon">@</td>
           <td class="spec-label">Kapasitas BBM</td>
           <td class="spec-value" id="spec-fuel">-</td>
         </tr>
         <tr>
-          <td class="spec-icon">🏷️</td>
+          <td class="spec-icon">%</td>
           <td class="spec-label">Kategori</td>
           <td class="spec-value" id="spec-category">-</td>
         </tr>
         <tr>
-          <td class="spec-icon">🛠️</td>
+          <td class="spec-icon">&</td>
           <td class="spec-label">Tipe BBM</td>
           <td class="spec-value" id="spec-bbm-tipe">-</td>
         </tr>
         <tr>
-          <td class="spec-icon">🪑</td>
+          <td class="spec-icon">^</td>
           <td class="spec-label">Kenyamanan</td>
           <td class="spec-value" id="spec-nyaman">-</td>
         </tr>
@@ -164,9 +196,10 @@
       </div>
       <div class="gallery-filters" id="gallery-cc">
         <span class="filter-group-label">CC</span>
-        <button class="chip active" data-cc="all">Semua</button>
-        <button class="chip" data-cc="kecil">≤125cc</button>
-        <button class="chip" data-cc="sedang">126-250cc</button>
+        <button class="chip" data-cc="kecil1">100-150cc</button>
+        <button class="chip" data-cc="kecil2">150-250cc</button>
+        <button class="chip" data-cc="sedang">250-600cc</button>
+        <button class="chip" data-cc="besar">600-1000cc</button>
       </div>
       <span class="gallery-count" id="gallery-count"></span>
     </div>
@@ -208,10 +241,159 @@
 
 </div>
 
+<!-- ============================================================
+     BAGIAN 2: WIZARD REKOMENDASI (dipindah dari landing.html)
+     ============================================================ -->
+<div class="page" id="page-wizard">
+  <div class="wizard-wrap">
+    <div class="wizard-header">
+      <div class="step-info">
+        <span class="step-label" id="w-step-label"></span>
+        <span class="step-pct" id="w-step-pct"></span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="w-progress"></div>
+      </div>
+      <div class="step-dots" id="w-dots"></div>
+    </div>
+    <div class="wizard-card">
+      <p class="wizard-q-sub" id="w-q-sub"></p>
+      <h2 class="wizard-q" id="w-q"></h2>
+      <p class="wizard-q-hint" id="w-q-hint"></p>
+      <div class="choices" id="w-choices"></div>
+    </div>
+    <div class="wizard-nav">
+      <button class="btn-back" id="w-btn-back">← Kembali</button>
+      <button class="btn-next" id="w-btn-next" disabled>Selanjutnya →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     BAGIAN 3: HASIL REKOMENDASI (dipindah dari landing.html)
+     ============================================================ -->
+<div class="page" id="page-hasil">
+  <div class="hasil-wrap">
+    <div class="hasil-header">
+      <p class="hasil-kecil">Hasil Rekomendasi</p>
+      <h1 class="hasil-title">Rekomendasi Motor Untukmu</h1>
+      <p class="hasil-pref" id="hasil-pref"></p>
+    </div>
+    <div class="top-rec" id="top-rec"></div>
+    <div class="insight-strip" id="insight-strip"></div>
+    <div class="rank-section-title">Peringkat Selengkapnya <span></span></div>
+    <div class="rank-grid" id="rank-grid"></div>
+    <div class="saw-section">
+      <div class="saw-header">
+        <div>
+          <p class="saw-title">Rincian Perbandingan</p>
+          <p class="saw-sub">Ringkasan nilai berdasarkan preferensi Anda</p>
+        </div>
+        <div class="saw-tabs" role="tablist">
+          <button class="saw-tab active" data-tab="matrix" role="tab" aria-selected="true" aria-controls="tab-matrix">Tabel Nilai</button>
+          <button class="saw-tab" data-tab="chart" role="tab" aria-selected="false" aria-controls="tab-chart">Grafik Nilai</button>
+        </div>
+        <span class="saw-badge" id="ml-method">Rincian</span>
+      </div>
+      <div class="saw-weights" id="saw-weights"></div>
+      <div class="saw-tab-panel" id="tab-matrix" role="tabpanel">
+        <div class="saw-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Motor</th>
+                <th>Cosine<br><small>(similarity)</small></th>
+                <th>Weighted<br><small>(weighted)</small></th>
+                <th>KNN<br><small>(neighbors)</small></th>
+                <th>Ergo<br><small>(ergonomic)</small></th>
+                <th>Skor ML</th>
+              </tr>
+            </thead>
+            <tbody id="saw-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="saw-tab-panel saw-tab-hidden" id="tab-chart" role="tabpanel">
+        <div class="saw-chart-inner"><canvas id="barChart"></canvas></div>
+      </div>
+    </div>
+    <div class="action-bar">
+      <button class="btn-primary" id="btn-ubah-pref">← Ubah Preferensi</button>
+      <button class="btn-ghost" data-page="katalog">Lihat Katalog</button>
+      <button class="btn-ghost" data-page="home">Beranda</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     BAGIAN 4: KATALOG MOTOR (dipindah dari landing.html)
+     ============================================================ -->
+<div class="page" id="page-katalog">
+  <div class="katalog-wrap">
+    <div class="katalog-header">
+      <h1 class="katalog-title">Katalog Motor</h1>
+      <p class="katalog-sub">Honda &amp; Yamaha · Motor 100cc sampai 1000cc+</p>
+    </div>
+    <div class="katalog-layout">
+      <aside class="filter-sidebar">
+        <p class="filter-title">Filter</p>
+        <div class="filter-section">
+          <p class="filter-label">Merk</p>
+          <label class="filter-check"><input type="checkbox" class="brand-cb" value="Honda" checked><span>Honda</span></label>
+          <label class="filter-check"><input type="checkbox" class="brand-cb" value="Yamaha" checked><span>Yamaha</span></label>
+        </div>
+        <div class="filter-section">
+          <p class="filter-label">Tipe</p>
+          <div class="filter-btn-group" id="filter-tipe">
+            <button class="filter-btn active" data-tipe="all">Semua</button>
+            <button class="filter-btn" data-tipe="Matic">Matic</button>
+            <button class="filter-btn" data-tipe="Sport">Sport</button>
+            <button class="filter-btn" data-tipe="Naked">Naked</button>
+          </div>
+        </div>
+        <div class="filter-section">
+          <p class="filter-label">Kapasitas CC</p>
+          <div class="filter-btn-group" id="filter-cc">
+            <button class="filter-btn" data-cc="kecil1">100-150cc</button>
+            <button class="filter-btn" data-cc="kecil2">150-250cc</button>
+            <button class="filter-btn" data-cc="sedang">250-600cc</button>
+            <button class="filter-btn" data-cc="besar">600-1000cc</button>
+          </div>
+        </div>
+      </aside>
+      <div class="katalog-main">
+        <div class="katalog-topbar">
+          <div class="search-wrap">
+            <input type="search" id="kat-search" placeholder="Cari nama motor..." autocomplete="off">
+          </div>
+          <select id="kat-sort">
+            <option value="default">Terpopuler</option>
+            <option value="harga-asc">Harga: Terendah</option>
+            <option value="harga-desc">Harga: Tertinggi</option>
+            <option value="nama">Nama A–Z</option>
+            <option value="cc-asc">CC Terkecil</option>
+            <option value="cc-desc">CC Terbesar</option>
+          </select>
+        </div>
+        <div class="katalog-grid" id="katalog-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== SCRIPTS ===================== -->
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
 <script src="assets/scripts/motor-data-store.js"></script>
+<!-- SAW System Modules -->
+<script src="assets/scripts/saw/saw-normalizer.js"></script>
+<script src="assets/scripts/saw/saw-weights.js"></script>
+<script src="assets/scripts/saw/saw-core.js"></script>
+<script src="assets/scripts/saw-calculator.js"></script>
+<script src="assets/scripts/recommendation-result.js"></script>
+<script src="assets/scripts/recommendation-wizard.js"></script>
+<script src="assets/scripts/motor-catalog.js"></script>
 <script src="assets/scripts/ui-controller.js"></script>
 <script src="assets/scripts/auth-service.js"></script>
 <script src="assets/scripts/app.js"></script>

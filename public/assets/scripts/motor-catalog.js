@@ -32,9 +32,12 @@ const Katalog = (function() {
     var list = (window.MOTORS || []).filter(function(m) {
       if (!brands.includes(m.brand)) return false;
       if (tipe !== 'all' && m.category !== tipe) return false;
-      if (cc === 'kecil' && m.cc > 125) return false;
-      if (cc === 'sedang' && (m.cc <= 125 || m.cc > 250)) return false;
-      if (cc === 'besar' && m.cc <= 250) return false;
+      if (cc !== 'all') {
+        if (cc === 'kecil1' && (m.cc < 100 || m.cc > 150)) return false;
+        if (cc === 'kecil2' && (m.cc < 151 || m.cc > 250)) return false;
+        if (cc === 'sedang' && (m.cc < 251 || m.cc > 600)) return false;
+        if (cc === 'besar' && m.cc < 601) return false;
+      }
       if (search && !(m.brand + ' ' + m.model).toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
@@ -67,10 +70,31 @@ const Katalog = (function() {
     for (var i = 0; i < motors.length; i++) {
       var m = motors[i];
       var harga = formatRupiah(m.harga);
-      var card = '<div class="kat-card" onclick="testClick(' + m.id + ')">';
+      // Hover tooltip card - with click to open modal
+      var card = '<div class="kat-card" data-motor=\'' + JSON.stringify(m).replace(/'/g, "&#39;") + '\' onclick="openSpecWizardFromCard(this)">';
       card += '<div class="kat-img">';
       card += '<img src="' + m.img + '" alt="' + m.brand + ' ' + m.model + '" loading="lazy" onerror="this.onerror=null;this.src=\'assets/images/placeholder.svg\'">';
       card += '<span class="kat-type-badge ' + (badgeCls[m.category] || '') + '">' + m.category + '</span>';
+      // Hover tooltip with specs
+      card += '<div class="kat-tooltip">';
+      card += '<div class="tooltip-header">';
+      card += '<span class="tooltip-brand">' + m.brand + '</span>';
+      card += '<span class="tooltip-model">' + m.model + '</span>';
+      card += '<span class="tooltip-year">' + m.year + '</span>';
+      card += '</div>';
+      card += '<div class="tooltip-specs">';
+      card += '<div class="tooltip-spec"><span class="tooltip-label">CC</span><span class="tooltip-value">' + m.cc + 'cc</span></div>';
+      card += '<div class="tooltip-spec"><span class="tooltip-label">Power</span><span class="tooltip-value">' + m.power + ' hp</span></div>';
+      card += '<div class="tooltip-spec"><span class="tooltip-label">Torque</span><span class="tooltip-value">' + m.torque + ' Nm</span></div>';
+      card += '<div class="tooltip-spec"><span class="tooltip-label">BBM</span><span class="tooltip-value">' + m.bbm + ' km/L</span></div>';
+      card += '<div class="tooltip-spec"><span class="tooltip-label">Berat</span><span class="tooltip-value">' + m.weight + ' kg</span></div>';
+      card += '<div class="tooltip-spec"><span class="tooltip-label">Tinggi Jok</span><span class="tooltip-value">' + m.seat_h + ' mm</span></div>';
+      card += '<div class="tooltip-spec"><span class="tooltip-label">Tangki</span><span class="tooltip-value">' + m.fuel_l + ' L</span></div>';
+      card += '<div class="tooltip-spec"><span class="tooltip-label">Kenyamanan</span><span class="tooltip-value">' + m.nyaman + '/10</span></div>';
+      card += '</div>';
+      card += '<div class="tooltip-price">Rp ' + harga + '</div>';
+      card += '<div class="tooltip-hint">Klik untuk detail</div>';
+      card += '</div>';
       card += '</div>';
       card += '<div class="kat-body">';
       card += '<div class="kat-name">' + m.brand + ' ' + m.model + '</div>';
@@ -81,9 +105,6 @@ const Katalog = (function() {
       card += '<span class="kat-spec">' + m.bbm + ' km/L</span>';
       card += '<span class="kat-spec">' + m.year + '</span>';
       card += '</div>';
-      card += '</div>';
-      card += '<div class="kat-action">';
-      card += '<button class="btn-lihat" onclick="event.stopPropagation(); testClick(' + m.id + ')">LIHAT DETAIL</button>';
       card += '</div>';
       card += '</div>';
       html += card;

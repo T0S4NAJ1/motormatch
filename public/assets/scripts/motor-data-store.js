@@ -17,7 +17,7 @@ const USAGE_PROFILES = {
 };
 
 const CC_LABEL = {
-  kecil:'≤125cc', sedang:'126–250cc', besar:'251–500cc', super:'>500cc'
+  kecil1:'100–150cc', kecil2:'151–250cc', sedang:'251–600cc', besar:'601–1000cc'
 };
 
 // ─── Data Motor (dari Dataset Bikez) ─────────────────────────────────────────
@@ -51,7 +51,7 @@ const MOTORS_RAW = [
   // Honda Sport
   { id:9,  brand:'Honda',  model:'CBR 150R',      year:2022, category:'Sport', cc:149,
     power:16.7, torque:14.4, weight:141, seat_h:788, fuel_l:12.3, harga:30500000, bbm:40.0, nyaman:6, bbm_tipe:'Pertamax',
-    img:'assets/images/CBR150R_Repsol_Edition.jfif' },
+    img:'assets/images/honda_cbr_150r.jpg' },
   { id:10, brand:'Honda',  model:'CBR 300R',      year:2019, category:'Sport', cc:286,
     power:22.4, torque:27.3, weight:172, seat_h:785, fuel_l:13.1, harga:65000000, bbm:30.0, nyaman:7, bbm_tipe:'Pertamax',
     img:'assets/images/honda_cbr_300r.jpg' },
@@ -69,12 +69,12 @@ const MOTORS_RAW = [
     img:'assets/images/honda_cbr_1000rr_r.jpg' },
 
   // Honda Naked
-  { id:15, brand:'Honda',  model:'CB125R',         year:2021, category:'Naked', cc:125,
-    power:11.0, torque:11.6, weight:129, seat_h:816, fuel_l:10.1, harga:41000000, bbm:45.0, nyaman:7, bbm_tipe:'Pertamax',
-    img:'assets/images/honda_cb125r.jpg' },
+  { id:15, brand:'Honda',  model:'CB150R',         year:2022, category:'Naked', cc:149,
+    power:15.6, torque:13.8, weight:126, seat_h:795, fuel_l:8.0, harga:35000000, bbm:42.0, nyaman:8, bbm_tipe:'Pertamax',
+    img:'assets/images/honda_cb150r.jpg' },
   { id:16, brand:'Honda',  model:'CB 200X',        year:2022, category:'Naked', cc:184,
     power:12.4, torque:16.1, weight:155, seat_h:810, fuel_l:12.0, harga:45000000, bbm:38.0, nyaman:8, bbm_tipe:'Pertamax',
-    img:'assets/images/Honda_CB200X_4.jpg' },
+    img:'assets/images/honda_cb_200x.jpg' },
   { id:17, brand:'Honda',  model:'CB 300R',         year:2019, category:'Naked', cc:286,
     power:22.4, torque:27.3, weight:143, seat_h:800, fuel_l:10.0, harga:68000000, bbm:28.0, nyaman:7, bbm_tipe:'Pertamax',
     img:'assets/images/honda_cb_300r.jpg' },
@@ -87,6 +87,11 @@ const MOTORS_RAW = [
   { id:20, brand:'Honda',  model:'CB 1000R',       year:2021, category:'Naked', cc:998,
     power:107.0, torque:104.0, weight:213, seat_h:830, fuel_l:16.2, harga:450000000, bbm:12.0, nyaman:7, bbm_tipe:'Pertamax Turbo',
     img:'assets/images/honda_cb_1000r.jpg' },
+
+  // Honda Cruiser
+  { id:42, brand:'Honda',  model:'NSR 125',      year:2003, category:'Sport', cc:125,
+    power:15.0, torque:12.0, weight:118, seat_h:785, fuel_l:12.0, harga:35000000, bbm:38.0, nyaman:6, bbm_tipe:'Pertamax',
+    img:'assets/images/honda_nsr_125.jpg' },
 
   // Yamaha Matic
   { id:21, brand:'Yamaha', model:'Mio i125',       year:2022, category:'Matic', cc:125,
@@ -126,7 +131,7 @@ const MOTORS_RAW = [
     img:'assets/images/yamaha_mt_15.jpg' },
   { id:32, brand:'Yamaha', model:'YS250 Fazer',    year:2018, category:'Naked', cc:249,
     power:15.4, torque:21.0, weight:147, seat_h:795, fuel_l:14.5, harga:42000000, bbm:33.0, nyaman:8, bbm_tipe:'Pertamax',
-    img:'assets/images/YAMAHA_YS250_Fazer_Yamaha_Communication_Plaza.jpg' },
+    img:'assets/images/yamaha_fz25_fazer.jpg' },
   { id:33, brand:'Yamaha', model:'MT-03',          year:2022, category:'Naked', cc:321,
     power:42.0, torque:29.6, weight:168, seat_h:780, fuel_l:14.0, harga:85000000, bbm:25.0, nyaman:8, bbm_tipe:'Pertamax',
     img:'assets/images/yamaha_mt_03.jpg' },
@@ -136,9 +141,6 @@ const MOTORS_RAW = [
   { id:35, brand:'Yamaha', model:'MT-09',          year:2022, category:'Naked', cc:889,
     power:119.0, torque:93.0, weight:193, seat_h:825, fuel_l:14.0, harga:310000000, bbm:14.0, nyaman:8, bbm_tipe:'Pertamax Turbo',
     img:'assets/images/yamaha_mt_09.jpg' },
-  { id:36, brand:'Yamaha', model:'XSR 155',        year:2022, category:'Naked', cc:155,
-    power:12.2, torque:14.7, weight:134, seat_h:790, fuel_l:10.5, harga:34500000, bbm:45.0, nyaman:8, bbm_tipe:'Pertamax',
-    img:'assets/images/yamaha_xsr_155.jpg' },
 
   // Yamaha Sport
   { id:37, brand:'Yamaha', model:'R15 V2',         year:2014, category:'Sport', cc:149,
@@ -217,12 +219,12 @@ const QUESTIONS = [
     id:'cc', stepLabel:'Step 05 — Kapasitas CC', pct:70,
     sub:'Pertanyaan 5 dari 6',
     q:'Kapasitas mesin yang Anda inginkan?',
-    hint:'Mesin kecil lebih irit BBM · Menengah serba bisa · Besar untuk touring & performa · 250cc+ untuk kelas premium.',
+    hint:'100-250cc irit BBM · 250-600cc performa sedang · 600-1000cc performa tinggi.',
     choices:[
-      { title:'Kecil (≤125cc)',        sub:'Sangat irit BBM, ideal dalam kota',     value:'kecil' },
-      { title:'Menengah (126–250cc)',  sub:'Balance power & efisiensi, serbaguna',  value:'sedang' },
-      { title:'Besar (251–500cc)',     sub:'Performa tinggi, touring nyaman',        value:'besar' },
-      { title:'Super (>500cc)',        sub:'Big bike & superbike kelas dunia',       value:'super' },
+      { title:'100 – 150 cc',  sub:'Ideal untuk harian & irit BBM',     value:'kecil1' },
+      { title:'150 – 250 cc',  sub:'Harian & performa seimbang',        value:'kecil2' },
+      { title:'250 – 600 cc',  sub:'Performa sedang & sport ringan',    value:'sedang' },
+      { title:'600 – 1000 cc', sub:'Performa tinggi & touring nyaman', value:'besar' },
     ]
   },
   {
@@ -245,10 +247,10 @@ function calcTinggiMin(seat_h) {
 
 function inCCSegment(m, seg) {
   switch (seg) {
-    case 'kecil':  return m.cc <= 125;
-    case 'sedang': return m.cc > 125 && m.cc <= 250;
-    case 'besar':  return m.cc > 250 && m.cc <= 500;
-    case 'super':  return m.cc > 500;
+    case 'kecil1': return m.cc >= 100 && m.cc <= 150;
+    case 'kecil2': return m.cc >= 151 && m.cc <= 250;
+    case 'sedang': return m.cc >= 251 && m.cc <= 600;
+    case 'besar':  return m.cc >= 601 && m.cc <= 1000;
     default:       return true;
   }
 }

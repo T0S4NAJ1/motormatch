@@ -2,6 +2,8 @@
 
 const mysql = require('mysql2/promise');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 try { require('dotenv').config(); } catch (_) {}
 
 const DB_CONFIG = {
@@ -17,18 +19,76 @@ const DB_CONFIG = {
   decimalNumbers:    true,
 };
 
-const pool = mysql.createPool(DB_CONFIG);
+// In-memory fallback storage when MySQL is unavailable
+const LOCAL_STORAGE_FILE = path.join(__dirname, 'local-users.json');
+
+let localUsers = {};
+let localSessions = {};
+let localHistory = {};   // { [userId]: [{id, answers_json, result_json, ...}] }
+let localHistoryCounter = 0;
+let _dbReady = false;
+
+// Load local users from file
+function loadLocalUsers() {
+  try {
+    if (fs.existsSync(LOCAL_STORAGE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(LOCAL_STORAGE_FILE, 'utf8'));
+      localUsers = data.users || {};
+      localSessions = data.sessions || {};
+      localHistory = data.history || {};
+      localHistoryCounter = data.historyCounter || 0;
+      console.log(`  📁 Loaded ${Object.keys(localUsers).length} local users`);
+    }
+  } catch (e) {
+    localUsers = {};
+    localSessions = {};
+    localHistory = {};
+    localHistoryCounter = 0;
+  }
+}
+
+// Save local users to file
+function saveLocalUsers() {
+  try {
+    fs.writeFileSync(LOCAL_STORAGE_FILE, JSON.stringify({
+      users: localUsers,
+      sessions: localSessions,
+      history: localHistory,
+      historyCounter: localHistoryCounter
+    }, null, 2));
+  } catch (e) {
+    console.error('  ❌ Failed to save local users:', e.message);
+  }
+}
+
+let pool = null;
+
+// Initialize MySQL pool
+function createPool() {
+  return mysql.createPool(DB_CONFIG);
+}
+
+// Check if MySQL is available
+function isDbReady() {
+  return _dbReady;
+}
 
 async function testConnection() {
   try {
+    pool = createPool();
     const conn = await pool.getConnection();
     await conn.ping();
     conn.release();
+    _dbReady = true;
     console.log(`  ✅ MySQL connected → ${DB_CONFIG.user}@${DB_CONFIG.host}:${DB_CONFIG.port}/${DB_CONFIG.database}`);
     return true;
   } catch (e) {
-    console.error(`  ❌ MySQL connection FAILED: ${e.message}`);
-    console.error(`     Cek .env atau jalankan: npm run setup`);
+    _dbReady = false;
+    console.log(`  ⚠️  MySQL unavailable - using local fallback`);
+    if (pool) {
+      try { await pool.end(); } catch (_) {}
+      pool = null;
+    }
     return false;
   }
 }
@@ -118,7 +178,7 @@ const FUEL_TYPES = Object.freeze({
 const FUEL_LEVEL = { 'Pertalite':0, 'Pertamax':1, 'Pertamax Turbo':2 };
 
 const CC_LABEL = {
-  kecil:'≤125cc', sedang:'126–250cc', besar:'251–500cc', super:'>500cc'
+  kecil1:'100–150cc', kecil2:'151–250cc', sedang:'251–600cc', besar:'601–1000cc'
 };
 
 const WEIGHTS = {
@@ -191,14 +251,14 @@ const QUESTIONS = [
   },
   {
     id:'cc', stepLabel:'Step 05 — Kapasitas CC', pct:70,
-    sub:'Pertanyaan 5 dari 7',
+    sub:'Pertanyaan 5 dari 6',
     q:'Kapasitas mesin yang Anda inginkan?',
-    hint:'Mesin kecil lebih irit BBM · Menengah serba bisa · Besar untuk touring & performa · 250cc+ untuk kelas premium.',
+    hint:'100-250cc irit BBM · 250-600cc performa sedang · 600-1000cc performa tinggi.',
     choices:[
-      { icon:'🌱', title:'Kecil (≤125cc)',        sub:'Sangat irit BBM, ideal dalam kota',     value:'kecil' },
-      { icon:'⚖️', title:'Menengah (126–250cc)',  sub:'Balance power & efisiensi, serbaguna',  value:'sedang' },
-      { icon:'🔥', title:'Besar (251–500cc)',     sub:'Performa tinggi, touring nyaman',        value:'besar' },
-      { icon:'💥', title:'Super (>500cc)',        sub:'Big bike & superbike kelas dunia',       value:'super' },
+      { icon:'🌱', title:'Kecil (100–150cc)',     sub:'Ideal untuk harian & irit BBM',     value:'kecil1' },
+      { icon:'⚖️', title:'Menengah (150–250cc)', sub:'Harian & performa seimbang',          value:'kecil2' },
+      { icon:'⚡', title:'Sedang (250–600cc)',   sub:'Performa sedang & sport ringan',     value:'sedang' },
+      { icon:'🔥', title:'Besar (600–1000cc)',   sub:'Performa tinggi, touring nyaman',    value:'besar' },
     ]
   },
   {
@@ -220,15 +280,15 @@ const MOTORS_RAW = [
     power:6.57, torque:9.36, weight:90,  seat_h:747, fuel_l:3.8, harga:18750000, bbm:59.5, nyaman:7, bbm_tipe:'Pertalite',     img:'assets/images/honda_beat_street.jpg' },
   { id:2,  brand:'Honda',  model:'Genio',          year:2022, category:'Matic', cc:110,
     power:9.0,  torque:9.3,  weight:94,  seat_h:740, fuel_l:4.0, harga:19000000, bbm:57.0, nyaman:8, bbm_tipe:'Pertalite',     img:'assets/images/honda_genio.jpg' },
-  { id:3,  brand:'Honda',  model:'Scoopy',         year:2022, category:'Matic', cc:110,
-    power:9.0,  torque:9.3,  weight:95,  seat_h:745, fuel_l:4.2, harga:21000000, bbm:55.0, nyaman:8, bbm_tipe:'Pertalite',     img:'assets/images/2021_Honda_Scoopy_Prestige_110_(20220216).jpg' },
-  { id:4,  brand:'Honda',  model:'PCX 125',        year:2021, category:'Matic', cc:125,
+  { id:3,  brand:'Honda',  model:'Scoopy',         year:2015, category:'Matic', cc:110,
+    power:9.0,  torque:9.3,  weight:95,  seat_h:745, fuel_l:4.2, harga:21000000, bbm:55.0, nyaman:8, bbm_tipe:'Pertalite',     img:'assets/images/honda_scoopy.jpg' },
+  { id:4,  brand:'Honda',  model:'PCX 125',        year:2019, category:'Matic', cc:125,
     power:12.3, torque:11.8, weight:127, seat_h:764, fuel_l:8.1, harga:27000000, bbm:50.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/honda_pcx_125.jpg' },
   { id:5,  brand:'Honda',  model:'Vario 160',     year:2022, category:'Matic', cc:157,
     power:15.8, torque:14.7, weight:133, seat_h:775, fuel_l:5.5, harga:27000000, bbm:46.8, nyaman:9, bbm_tipe:'Pertamax',      img:'assets/images/honda_vario_160.jpg' },
   { id:6,  brand:'Honda',  model:'PCX 160',        year:2022, category:'Matic', cc:157,
     power:15.8, torque:14.7, weight:131, seat_h:764, fuel_l:8.1, harga:32000000, bbm:46.8, nyaman:9, bbm_tipe:'Pertamax',      img:'assets/images/honda_pcx_160.jpg' },
-  { id:7,  brand:'Honda',  model:'ADV 150',        year:2021, category:'Matic', cc:149,
+  { id:7,  brand:'Honda',  model:'ADV 150',        year:2022, category:'Matic', cc:149,
     power:12.3, torque:13.8, weight:133, seat_h:795, fuel_l:8.0, harga:36200000, bbm:44.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/honda_adv_150.jpg' },
   { id:8,  brand:'Honda',  model:'Forza 350',      year:2022, category:'Matic', cc:330,
     power:28.8, torque:31.9, weight:186, seat_h:780, fuel_l:11.7, harga:95000000, bbm:28.0, nyaman:9, bbm_tipe:'Pertamax',      img:'assets/images/honda_forza_350.jpg' },
@@ -236,32 +296,38 @@ const MOTORS_RAW = [
     power:15.8, torque:14.7, weight:115, seat_h:770, fuel_l:5.5, harga:28000000, bbm:48.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/honda_stylo_160.jpg' },
 
   // Honda Sport
-  { id:9,  brand:'Honda',  model:'CBR 150R',      year:2022, category:'Sport', cc:149,
-    power:16.7, torque:14.4, weight:141, seat_h:788, fuel_l:12.3, harga:30500000, bbm:40.0, nyaman:6, bbm_tipe:'Pertamax',      img:'assets/images/CBR150R_Repsol_Edition.jfif' },
-  { id:10, brand:'Honda',  model:'CBR 300R',      year:2019, category:'Sport', cc:286,
+  { id:9,  brand:'Honda',  model:'CBR 150R',      year:2013, category:'Sport', cc:149,
+    power:16.7, torque:14.4, weight:141, seat_h:788, fuel_l:12.3, harga:30500000, bbm:40.0, nyaman:6, bbm_tipe:'Pertamax',      img:'assets/images/honda_cbr_150r.jpg' },
+  { id:10, brand:'Honda',  model:'CBR 300R',      year:2016, category:'Sport', cc:286,
     power:22.4, torque:27.3, weight:172, seat_h:785, fuel_l:13.1, harga:65000000, bbm:30.0, nyaman:7, bbm_tipe:'Pertamax',      img:'assets/images/honda_cbr_300r.jpg' },
-  { id:11, brand:'Honda',  model:'CBR 500R',      year:2019, category:'Sport', cc:471,
+  { id:11, brand:'Honda',  model:'CBR 500R',      year:2022, category:'Sport', cc:471,
     power:35.0, torque:43.0, weight:189, seat_h:785, fuel_l:17.7, harga:125000000, bbm:20.0, nyaman:7, bbm_tipe:'Pertamax',      img:'assets/images/honda_cbr_500r.jpg' },
   { id:12, brand:'Honda',  model:'CBR 650R',      year:2022, category:'Sport', cc:649,
     power:87.0, torque:63.0, weight:206, seat_h:810, fuel_l:15.4, harga:280000000, bbm:16.0, nyaman:7, bbm_tipe:'Pertamax Turbo', img:'assets/images/honda_cbr_650r.jpg' },
-  { id:13, brand:'Honda',  model:'CBR 600RR',     year:2020, category:'Sport', cc:599,
+  { id:13, brand:'Honda',  model:'CBR 600RR',     year:2022, category:'Sport', cc:599,
     power:118.0, torque:63.0, weight:194, seat_h:820, fuel_l:18.0, harga:350000000, bbm:14.0, nyaman:6, bbm_tipe:'Pertamax Turbo', img:'assets/images/honda_cbr_600rr.jpg' },
-  { id:14, brand:'Honda',  model:'CBR 1000RR-R',  year:2020, category:'Sport', cc:999,
+  { id:14, brand:'Honda',  model:'CBR 1000RR-R',  year:2022, category:'Sport', cc:999,
     power:217.6, torque:113.0, weight:201, seat_h:830, fuel_l:16.1, harga:700000000, bbm:10.0, nyaman:5, bbm_tipe:'Pertamax Turbo', img:'assets/images/honda_cbr_1000rr_r.jpg' },
 
   // Honda Naked
-  { id:15, brand:'Honda',  model:'CB125R',         year:2021, category:'Naked', cc:125,
-    power:11.0, torque:11.6, weight:129, seat_h:816, fuel_l:10.1, harga:41000000, bbm:45.0, nyaman:7, bbm_tipe:'Pertamax',      img:'assets/images/honda_cb125r.jpg' },
+  { id:15, brand:'Honda',  model:'CB150R',         year:2022, category:'Naked', cc:149,
+    power:15.6, torque:13.8, weight:126, seat_h:795, fuel_l:8.0, harga:35000000, bbm:42.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/honda_cb150r.jpg' },
   { id:16, brand:'Honda',  model:'CB 200X',        year:2022, category:'Naked', cc:184,
-    power:12.4, torque:16.1, weight:155, seat_h:810, fuel_l:12.0, harga:45000000, bbm:38.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/Honda_CB200X_4.jpg' },
+    power:12.4, torque:16.1, weight:155, seat_h:810, fuel_l:12.0, harga:45000000, bbm:38.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/honda_cb_200x.jpg' },
   { id:17, brand:'Honda',  model:'CB 300R',         year:2019, category:'Naked', cc:286,
     power:22.4, torque:27.3, weight:143, seat_h:800, fuel_l:10.0, harga:68000000, bbm:28.0, nyaman:7, bbm_tipe:'Pertamax',      img:'assets/images/honda_cb_300r.jpg' },
-  { id:18, brand:'Honda',  model:'CB 500F',        year:2019, category:'Naked', cc:471,
+  { id:18, brand:'Honda',  model:'CB 500F',        year:2022, category:'Naked', cc:471,
     power:35.0, torque:43.0, weight:192, seat_h:785, fuel_l:17.7, harga:118000000, bbm:20.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/honda_cb_500f.jpg' },
   { id:19, brand:'Honda',  model:'CB 650R',        year:2022, category:'Naked', cc:649,
     power:87.0, torque:63.0, weight:206, seat_h:810, fuel_l:15.4, harga:250000000, bbm:15.0, nyaman:8, bbm_tipe:'Pertamax Turbo', img:'assets/images/honda_cb_650r.jpg' },
-  { id:20, brand:'Honda',  model:'CB 1000R',       year:2021, category:'Naked', cc:998,
+  { id:20, brand:'Honda',  model:'CB 1000R',       year:2022, category:'Naked', cc:998,
     power:107.0, torque:104.0, weight:213, seat_h:830, fuel_l:16.2, harga:450000000, bbm:12.0, nyaman:7, bbm_tipe:'Pertamax Turbo', img:'assets/images/honda_cb_1000r.jpg' },
+  { id:44, brand:'Honda',  model:'CB 100',         year:1970, category:'Naked', cc:100,
+    power:11.0, torque:8.5, weight:98, seat_h:760, fuel_l:8.0, harga:15000000, bbm:45.0, nyaman:7, bbm_tipe:'Pertalite', img:'assets/images/honda_cb100.png' },
+
+  // Honda Cruiser
+  { id:43, brand:'Honda',  model:'NSR 125',      year:2003, category:'Sport', cc:125,
+    power:15.0, torque:12.0, weight:118, seat_h:785, fuel_l:12.0, harga:35000000, bbm:38.0, nyaman:6, bbm_tipe:'Pertamax', img:'assets/images/honda_nsr_125.jpg' },
 
   // Yamaha Matic
   { id:21, brand:'Yamaha', model:'Mio i125',       year:2022, category:'Matic', cc:125,
@@ -278,37 +344,33 @@ const MOTORS_RAW = [
     power:15.4, torque:14.0, weight:127, seat_h:765, fuel_l:7.1, harga:34500000, bbm:44.0, nyaman:9, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_nmax_160.jpg' },
   { id:27, brand:'Yamaha', model:'XMAX 300',       year:2022, category:'Matic', cc:292,
     power:20.6, torque:29.0, weight:183, seat_h:795, fuel_l:13.2, harga:90000000, bbm:28.0, nyaman:9, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_xmax_300.jpg' },
-  { id:28, brand:'Yamaha', model:'XMAX 400',       year:2021, category:'Matic', cc:395,
-    power:24.5, torque:36.0, weight:206, seat_h:800, fuel_l:13.0, harga:120000000, bbm:22.0, nyaman:9, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_xmax_400.jpg' },
 
   // Yamaha Naked
   { id:29, brand:'Yamaha', model:'MT-125',         year:2022, category:'Naked', cc:125,
     power:14.8, torque:11.5, weight:142, seat_h:810, fuel_l:11.0, harga:52000000, bbm:42.0, nyaman:7, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_mt_125.jpg' },
-  { id:30, brand:'Yamaha', model:'Vixion',         year:2020, category:'Naked', cc:149,
+  { id:30, brand:'Yamaha', model:'Vixion',         year:2021, category:'Naked', cc:149,
     power:16.4, torque:14.5, weight:134, seat_h:795, fuel_l:12.0, harga:25000000, bbm:42.0, nyaman:7, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_vixion.jpg' },
   { id:31, brand:'Yamaha', model:'MT-15',          year:2022, category:'Naked', cc:155,
     power:18.2, torque:14.7, weight:138, seat_h:810, fuel_l:10.0, harga:36000000, bbm:40.0, nyaman:7, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_mt_15.jpg' },
   { id:32, brand:'Yamaha', model:'YS250 Fazer',    year:2018, category:'Naked', cc:249,
-    power:15.4, torque:21.0, weight:147, seat_h:795, fuel_l:14.5, harga:42000000, bbm:33.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/YAMAHA_YS250_Fazer_Yamaha_Communication_Plaza.jpg' },
+    power:15.4, torque:21.0, weight:147, seat_h:795, fuel_l:14.5, harga:42000000, bbm:33.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_fz25_fazer.jpg' },
   { id:33, brand:'Yamaha', model:'MT-03',          year:2022, category:'Naked', cc:321,
     power:42.0, torque:29.6, weight:168, seat_h:780, fuel_l:14.0, harga:85000000, bbm:25.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_mt_03.jpg' },
   { id:34, brand:'Yamaha', model:'MT-07',          year:2022, category:'Naked', cc:689,
     power:74.0, torque:68.0, weight:188, seat_h:805, fuel_l:14.0, harga:220000000, bbm:18.0, nyaman:8, bbm_tipe:'Pertamax Turbo', img:'assets/images/yamaha_mt_07.jpg' },
   { id:35, brand:'Yamaha', model:'MT-09',          year:2022, category:'Naked', cc:889,
     power:119.0, torque:93.0, weight:193, seat_h:825, fuel_l:14.0, harga:310000000, bbm:14.0, nyaman:8, bbm_tipe:'Pertamax Turbo', img:'assets/images/yamaha_mt_09.jpg' },
-  { id:36, brand:'Yamaha', model:'XSR 155',        year:2022, category:'Naked', cc:155,
-    power:12.2, torque:14.7, weight:134, seat_h:790, fuel_l:10.5, harga:34500000, bbm:45.0, nyaman:8, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_xsr_155.jpg' },
 
   // Yamaha Sport
-  { id:37, brand:'Yamaha', model:'R15 V2',         year:2014, category:'Sport', cc:149,
+  { id:37, brand:'Yamaha', model:'R15 V4',         year:2022, category:'Sport', cc:149,
     power:12.6, torque:14.7, weight:136, seat_h:815, fuel_l:12.0, harga:30000000, bbm:40.0, nyaman:6, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_r15_v4.jpg' },
-  { id:38, brand:'Yamaha', model:'YZF-R25',        year:2022, category:'Sport', cc:250,
+  { id:38, brand:'Yamaha', model:'YZF-R25',        year:2021, category:'Sport', cc:250,
     power:35.0, torque:22.6, weight:166, seat_h:780, fuel_l:14.0, harga:72000000, bbm:32.0, nyaman:7, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_yzf_r25.jpg' },
   { id:39, brand:'Yamaha', model:'YZF-R3',         year:2022, category:'Sport', cc:321,
     power:42.0, torque:29.6, weight:169, seat_h:780, fuel_l:14.0, harga:95000000, bbm:24.0, nyaman:7, bbm_tipe:'Pertamax',      img:'assets/images/yamaha_yzf_r3.jpg' },
   { id:40, brand:'Yamaha', model:'YZF-R7',         year:2022, category:'Sport', cc:689,
     power:73.0, torque:67.0, weight:188, seat_h:835, fuel_l:13.2, harga:230000000, bbm:17.0, nyaman:7, bbm_tipe:'Pertamax Turbo', img:'assets/images/yamaha_yzf_r7.jpg' },
-  { id:41, brand:'Yamaha', model:'YZF-R1',        year:2020, category:'Sport', cc:998,
+  { id:41, brand:'Yamaha', model:'YZF-R1',         year:2022, category:'Sport', cc:998,
     power:200.0, torque:112.4, weight:206, seat_h:855, fuel_l:17.0, harga:450000000, bbm:12.0, nyaman:6, bbm_tipe:'Pertamax Turbo', img:'assets/images/yamaha_yzf_r1.jpg' },
 ];
 
@@ -443,9 +505,9 @@ async function filterMotors(opts = {}) {
   }
   if (ccSegment) {
     const ccClause = {
-      kecil:  'cc <= 125',
-      sedang: 'cc > 125 AND cc <= 250',
-      besar:  'cc > 250 AND cc <= 500',
+      kecil:  'cc >= 100 AND cc <= 150',
+      sedang: 'cc >= 151 AND cc <= 250',
+      besar:  'cc >= 251 AND cc <= 500',
       super:  'cc > 500',
     }[ccSegment];
     if (ccClause) where.push(`(${ccClause})`);
@@ -562,13 +624,31 @@ function publicUser(row) {
 }
 
 async function getRoleId(roleName) {
+  if (!_dbReady || !pool) throw new Error('Database not available');
   const [rows] = await pool.query('SELECT id FROM roles WHERE name = ? LIMIT 1', [roleName]);
   if (!rows.length) throw new Error('Role belum tersedia di database');
   return Number(rows[0].id);
 }
 
 async function seedAuthDefaults() {
-  // Hanya insert role user
+  if (!_dbReady || !pool) {
+    // Create demo user in local storage if not exists
+    if (!localUsers['user']) {
+      localUsers['user'] = {
+        id: 1,
+        full_name: 'User Demo',
+        username: 'user',
+        password_hash: hashPassword('user123'),
+        role: 'user',
+        created_at: new Date().toISOString()
+      };
+      saveLocalUsers();
+      console.log('  ✅ Created demo user in local storage (user/user123)');
+    }
+    return;
+  }
+
+  // MySQL mode - keep existing logic
   await pool.query(`INSERT IGNORE INTO roles (id, name) VALUES (2, 'user')`);
 
   const [[{ totalUser }]] = await pool.query(`
@@ -587,12 +667,39 @@ async function seedAuthDefaults() {
 
 async function registerUser(payload = {}) {
   // Registrasi publik SELALU membuat akun user.
-  // Role 'admin' tidak boleh dibuat lewat registrasi, bahkan jika payload mengirim role lain.
-  // Akun admin hanya dibuat di dalam program (lihat seedAuthDefaults).
   const role = 'user';
   const fullName = cleanFullName(payload.full_name);
   const username = cleanUsername(payload.username);
   const password = cleanPassword(payload.password);
+
+  // Check if username already exists (local mode)
+  if (localUsers[username]) {
+    throw new Error('Username sudah digunakan');
+  }
+
+  if (!_dbReady || !pool) {
+    // Local storage mode
+    const id = Object.keys(localUsers).length + 1;
+    localUsers[username] = {
+      id,
+      full_name: fullName,
+      username: username,
+      password_hash: hashPassword(password),
+      role: role,
+      created_at: new Date().toISOString()
+    };
+    saveLocalUsers();
+    console.log(`  ✅ Registered local user: ${username}`);
+    return {
+      id,
+      full_name: fullName,
+      username: username,
+      role: role,
+      created_at: localUsers[username].created_at
+    };
+  }
+
+  // MySQL mode
   const roleId = await getRoleId(role);
 
   try {
@@ -608,6 +715,19 @@ async function registerUser(payload = {}) {
 }
 
 async function getUserById(id) {
+  if (!_dbReady || !pool) {
+    // Local storage mode - find by id
+    const user = Object.values(localUsers).find(u => u.id === Number(id));
+    if (!user) return null;
+    return {
+      id: user.id,
+      full_name: user.full_name,
+      username: user.username,
+      role: user.role,
+      created_at: user.created_at
+    };
+  }
+
   const [rows] = await pool.query(`
     SELECT u.id, u.full_name, u.username, u.created_at, r.name AS role
     FROM users u JOIN roles r ON r.id = u.role_id
@@ -618,6 +738,15 @@ async function getUserById(id) {
 
 async function createUserSession(userId) {
   const token = crypto.randomBytes(32).toString('hex');
+
+  if (!_dbReady || !pool) {
+    // Local storage mode
+    const expires = new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString();
+    localSessions[token] = { userId: Number(userId), expires };
+    saveLocalUsers();
+    return token;
+  }
+
   const expires = new Date(Date.now() + 1000 * 60 * 60 * 12);
   await pool.query(
     'INSERT INTO user_sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)',
@@ -629,6 +758,40 @@ async function createUserSession(userId) {
 async function loginUser(payload = {}) {
   const username = cleanUsername(payload.username);
   const password = String(payload.password ?? '');
+
+  if (!_dbReady || !pool) {
+    // Local storage mode
+    const user = localUsers[username];
+    if (!user || !verifyPassword(password, user.password_hash)) {
+      throw new Error('Username atau password salah');
+    }
+
+    // Clean expired sessions
+    const now = new Date().toISOString();
+    for (const token in localSessions) {
+      if (localSessions[token].expires < now) {
+        delete localSessions[token];
+      }
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString();
+    localSessions[token] = { userId: user.id, expires };
+    saveLocalUsers();
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        username: user.username,
+        role: user.role,
+        created_at: user.created_at
+      }
+    };
+  }
+
+  // MySQL mode
   const [rows] = await pool.query(`
     SELECT u.id, u.full_name, u.username, u.password_hash, u.created_at, r.name AS role
     FROM users u JOIN roles r ON r.id = u.role_id
@@ -646,6 +809,32 @@ async function loginUser(payload = {}) {
 
 async function getUserByToken(token) {
   if (!token) return null;
+
+  if (!_dbReady || !pool) {
+    // Local storage mode
+    const session = localSessions[token];
+    if (!session) return null;
+
+    const now = new Date().toISOString();
+    if (session.expires < now) {
+      delete localSessions[token];
+      saveLocalUsers();
+      return null;
+    }
+
+    const user = Object.values(localUsers).find(u => u.id === session.userId);
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      full_name: user.full_name,
+      username: user.username,
+      role: user.role,
+      created_at: user.created_at
+    };
+  }
+
+  // MySQL mode
   const [rows] = await pool.query(`
     SELECT u.id, u.full_name, u.username, u.created_at, r.name AS role
     FROM user_sessions s
@@ -659,6 +848,18 @@ async function getUserByToken(token) {
 
 async function logoutUser(token) {
   if (!token) return false;
+
+  if (!_dbReady || !pool) {
+    // Local storage mode
+    if (localSessions[token]) {
+      delete localSessions[token];
+      saveLocalUsers();
+      return true;
+    }
+    return false;
+  }
+
+  // MySQL mode
   const [result] = await pool.query('DELETE FROM user_sessions WHERE token_hash = ?', [hashToken(token)]);
   return result.affectedRows > 0;
 }
@@ -673,6 +874,25 @@ async function listUsers() {
 }
 
 async function saveRecommendationHistory(userId, answers, result, topMotor) {
+  if (!_dbReady || !pool) {
+    // Local storage mode
+    const uid = String(userId);
+    localHistoryCounter++;
+    const id = localHistoryCounter;
+    if (!localHistory[uid]) localHistory[uid] = [];
+    localHistory[uid].unshift({
+      id,
+      answers_json: JSON.stringify(answers),
+      result_json: JSON.stringify(result),
+      top_motor_id: topMotor?.id || null,
+      top_motor_name: topMotor ? `${topMotor.brand} ${topMotor.model}` : 'Unknown',
+      created_at: new Date().toISOString()
+    });
+    // Batasi 50 entry per user
+    if (localHistory[uid].length > 50) localHistory[uid] = localHistory[uid].slice(0, 50);
+    saveLocalUsers();
+    return id;
+  }
   const [insertResult] = await pool.query(
     `INSERT INTO recommendation_history (user_id, answers_json, result_json, top_motor_id, top_motor_name) VALUES (?, ?, ?, ?, ?)`,
     [Number(userId), JSON.stringify(answers), JSON.stringify(result), topMotor?.id || null, topMotor ? `${topMotor.brand} ${topMotor.model}` : 'Unknown']
@@ -681,6 +901,18 @@ async function saveRecommendationHistory(userId, answers, result, topMotor) {
 }
 
 async function getRecommendationHistory(userId) {
+  if (!_dbReady || !pool) {
+    // Local storage mode
+    const uid = String(userId);
+    const rows = (localHistory[uid] || []).slice(0, 50);
+    return rows.map(row => ({
+      id: Number(row.id),
+      answers: JSON.parse(row.answers_json),
+      result: JSON.parse(row.result_json),
+      topMotor: row.top_motor_id ? { id: Number(row.top_motor_id), name: row.top_motor_name } : null,
+      createdAt: row.created_at
+    }));
+  }
   const [rows] = await pool.query(
     `SELECT * FROM recommendation_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 50`,
     [Number(userId)]
@@ -695,6 +927,16 @@ async function getRecommendationHistory(userId) {
 }
 
 async function deleteHistory(historyId, userId) {
+  if (!_dbReady || !pool) {
+    // Local storage mode
+    const uid = String(userId);
+    if (!localHistory[uid]) return false;
+    const before = localHistory[uid].length;
+    localHistory[uid] = localHistory[uid].filter(h => h.id !== Number(historyId));
+    const deleted = localHistory[uid].length < before;
+    if (deleted) saveLocalUsers();
+    return deleted;
+  }
   const [result] = await pool.query(
     'DELETE FROM recommendation_history WHERE id = ? AND user_id = ?',
     [Number(historyId), Number(userId)]
@@ -703,6 +945,14 @@ async function deleteHistory(historyId, userId) {
 }
 
 async function deleteAllHistory(userId) {
+  if (!_dbReady || !pool) {
+    // Local storage mode
+    const uid = String(userId);
+    const count = (localHistory[uid] || []).length;
+    localHistory[uid] = [];
+    saveLocalUsers();
+    return count;
+  }
   const [result] = await pool.query(
     'DELETE FROM recommendation_history WHERE user_id = ?',
     [Number(userId)]
@@ -712,10 +962,10 @@ async function deleteAllHistory(userId) {
 
 function inCCSegment(m, seg) {
   switch (seg) {
-    case 'kecil':  return m.cc <= 125;
-    case 'sedang': return m.cc > 125 && m.cc <= 250;
-    case 'besar':  return m.cc > 250 && m.cc <= 500;
-    case 'super':  return m.cc > 500;
+    case 'kecil1': return m.cc >= 100 && m.cc <= 150;
+    case 'kecil2': return m.cc >= 151 && m.cc <= 250;
+    case 'sedang': return m.cc >= 251 && m.cc <= 600;
+    case 'besar':  return m.cc >= 601 && m.cc <= 1000;
     default:       return true;
   }
 }
@@ -729,6 +979,7 @@ function ergonomicFit(motor, tinggi_user) {
 }
 
 async function ensureDatabase() {
+  if (!_dbReady) return;
   const bootstrap = await mysql.createConnection({
     host: DB_CONFIG.host, port: DB_CONFIG.port,
     user: DB_CONFIG.user, password: DB_CONFIG.password,
@@ -742,11 +993,13 @@ async function ensureDatabase() {
 }
 
 async function createSchema() {
+  if (!_dbReady || !pool) return;
   await pool.query(SCHEMA_SQL);
   for (const sql of AUTH_SCHEMA_SQL) await pool.query(sql);
 }
 
 async function seed() {
+  if (!_dbReady || !pool) return 0;
   const values = MOTORS_RAW.map(m => [
     m.id, m.brand, m.model, m.year, m.category, m.cc,
     m.power, m.torque, m.weight, m.seat_h, m.fuel_l,
@@ -767,21 +1020,37 @@ async function seed() {
 }
 
 async function init() {
-  await ensureDatabase();
-  await createSchema();
-  await seedAuthDefaults();
+  // Load local users first
+  loadLocalUsers();
 
-  const [[{ count }]] = await pool.query('SELECT COUNT(*) AS count FROM motors');
-  if (count === 0) {
-    const inserted = await seed();
-    console.log(`  ✅ Seeded ${inserted} motor`);
+  // Try to connect to MySQL
+  _dbReady = await testConnection();
+
+  if (_dbReady && pool) {
+    // MySQL mode
+    await ensureDatabase();
+    await createSchema();
+    await seedAuthDefaults();
+
+    const [[{ count }]] = await pool.query('SELECT COUNT(*) AS count FROM motors');
+    if (count === 0) {
+      const inserted = await seed();
+      console.log(`  ✅ Seeded ${inserted} motor`);
+    } else {
+      console.log(`  ℹ️  Skip seed — table sudah berisi ${count} motor`);
+    }
   } else {
-    console.log(`  ℹ️  Skip seed — table sudah berisi ${count} motor`);
+    // Local storage mode - create demo user if not exists
+    await seedAuthDefaults();
   }
 }
 
 async function close() {
-  await pool.end();
+  if (pool) {
+    await pool.end();
+  }
+  // Save any pending local changes
+  saveLocalUsers();
 }
 
 module.exports = {
@@ -798,4 +1067,6 @@ module.exports = {
 
   MOTORS_RAW, registerUser, loginUser, getUserByToken, logoutUser, seedAuthDefaults,
   saveRecommendationHistory, getRecommendationHistory, deleteHistory, deleteAllHistory,
+
+  isDbReady,
 };

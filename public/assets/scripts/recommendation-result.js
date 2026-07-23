@@ -13,7 +13,48 @@ const Hasil = (() => {
 
   function compute(answers) {
     try {
-      const { results, weights, relaxed, topReasons, closeRace, confidence } = runSAW(answers);
+      // Check if runSAW is available
+      if (typeof runSAW !== 'function') {
+        console.error('[SAW] runSAW is not a function!', typeof runSAW);
+        console.log('[SAW] window._sawCoreImpl:', typeof window._sawCoreImpl);
+        document.getElementById('top-rec').innerHTML = `
+          <div style="padding:2rem;text-align:center;color:#FF6600">
+            <p>PERINGATAN: Sistem rekomendasi belum siap. Silakan refresh halaman.</p>
+            <p style="font-size:0.9rem">runSAW: ${typeof runSAW}, _sawCoreImpl: ${typeof window._sawCoreImpl}</p>
+          </div>`;
+        return;
+      }
+
+      const sawResult = runSAW(answers);
+      console.log('[SAW] Result:', sawResult);
+
+      // Check if result is valid
+      if (!sawResult || sawResult.error) {
+        console.error('[SAW] Error:', sawResult?.error);
+        document.getElementById('top-rec').innerHTML = `
+          <div style="padding:2rem;text-align:center;color:#FF6600">
+            <p>PERINGATAN: ${sawResult?.error || 'Terjadi kesalahan tidak dikenal'}</p>
+          </div>`;
+        return;
+      }
+
+      // Extract results from SAW output
+      const results = sawResult.results || [];
+      const weights = sawResult.weights || {};
+      const relaxed = sawResult.calculation?.appliedRelaxation || [];
+      const topReasons = results.length > 0 && results[0].reasons ? results[0].reasons : [];
+      const closeRace = sawResult.meta?.closeRace || false;
+      const confidence = sawResult.meta?.confidence || 0.5;
+
+      if (results.length === 0) {
+        document.getElementById('top-rec').innerHTML = `
+          <div style="padding:2rem;text-align:center;color:#FF6600">
+            <p>PERINGATAN: Tidak ada motor yang cocok dengan preferensi Anda</p>
+            <p style="font-size:0.9rem">Coba ubah filter atau budget Anda</p>
+          </div>`;
+        return;
+      }
+
       render(results, weights, answers, { relaxed, topReasons, closeRace, confidence });
       showPage('hasil');
 
@@ -24,6 +65,7 @@ const Hasil = (() => {
       document.getElementById('top-rec').innerHTML = `
         <div style="padding:2rem;text-align:center;color:#FF6600">
           <p>PERINGATAN: Terjadi kesalahan: ${err.message}</p>
+          <p style="font-size:0.8rem;color:#999">Stack: ${err.stack}</p>
         </div>`;
     }
   }
@@ -64,7 +106,7 @@ const Hasil = (() => {
 
     const usageMap = { harian:'Harian', touring:'Touring', sport:'Sport', keluarga:'Keluarga' };
     const prioMap  = { harga:'Harga', bbm:'Irit BBM', performa:'Performa', nyaman:'Kenyamanan' };
-    const ccMap    = { kecil:'≤125cc', sedang:'≤250cc', null:'Semua' };
+    const ccMap    = { kecil1:'100–150cc', kecil2:'151–250cc', sedang:'251–600cc', besar:'601–1000cc' };
     const tipe     = answers.tipe === 'null' ? 'Semua' : answers.tipe;
     const cc       = ccMap[answers.cc] || 'Semua';
     const { relaxed = [], topReasons = [], closeRace = false, confidence = 1 } = meta || {};
@@ -232,7 +274,7 @@ const Hasil = (() => {
       </div>
       ${tinggiUser ? `
       <div class="insight-card">
-        <div class="insight-icon">📏</div>
+        <div class="insight-icon">_</div>
         <div class="insight-lbl">Body Match</div>
         <div class="insight-val" style="color:${Math.round((top.ergoScore || 0.8) * 100) >= 75 ? 'var(--green)' : 'var(--orange)'}">${Math.round((top.ergoScore || 0.8) * 100)}%</div>
       </div>

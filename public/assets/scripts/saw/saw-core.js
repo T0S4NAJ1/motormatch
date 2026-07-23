@@ -54,6 +54,8 @@
 
 'use strict';
 
+console.log('[SAW] saw-core.js LOADING - motor-data-store should be loaded first');
+
 /**
  * ╔═══════════════════════════════════════════════════════════════════════════════╗
  * ║                           KONSTANTA FILTERING                           ║
@@ -67,7 +69,7 @@ const SOFT_BUDGET_MARGIN = 0.25;
 const TINGGI_TOLERANSI = 10;
 
 /** Jumlah minimum hasil yang harus ditampilkan */
-const MIN_RESULTS = 1;
+const MIN_RESULTS = 5;
 
 /** Bobot untuk skor SAW */
 const SAW_WEIGHT = 0.80;
@@ -154,6 +156,19 @@ function calculateErgonomicScore(motor, tinggiUser) {
 }
 
 /**
+ * Cek apakah motor masuk dalam segment CC
+ */
+function inCCSegment(m, seg) {
+  switch (seg) {
+    case 'kecil1': return m.cc >= 100 && m.cc <= 150;
+    case 'kecil2': return m.cc >= 151 && m.cc <= 250;
+    case 'sedang': return m.cc >= 251 && m.cc <= 600;
+    case 'besar':  return m.cc >= 601 && m.cc <= 1000;
+    default:       return true;
+  }
+}
+
+/**
  * ╔═══════════════════════════════════════════════════════════════════════════════╗
  * ║                          FILTERING MOTORS                              ║
  * ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -190,17 +205,17 @@ function filterMotors(motors, filters) {
   // ── FILTER 3: KAPASITAS CC ───────────────────────────────────────────────
   if (cc && cc !== 'null') {
     switch (cc) {
-      case 'kecil':
-        filtered = filtered.filter(m => m.cc <= 125);
+      case 'kecil1': // 100-150cc
+        filtered = filtered.filter(m => m.cc >= 100 && m.cc <= 150);
         break;
-      case 'sedang':
-        filtered = filtered.filter(m => m.cc > 125 && m.cc <= 250);
+      case 'kecil2': // 150-250cc
+        filtered = filtered.filter(m => m.cc >= 151 && m.cc <= 250);
         break;
-      case 'besar':
-        filtered = filtered.filter(m => m.cc > 250 && m.cc <= 500);
+      case 'sedang': // 250-600cc
+        filtered = filtered.filter(m => m.cc >= 251 && m.cc <= 600);
         break;
-      case 'super':
-        filtered = filtered.filter(m => m.cc > 500);
+      case 'besar': // 600-1000cc
+        filtered = filtered.filter(m => m.cc >= 601 && m.cc <= 1000);
         break;
     }
   }
@@ -220,6 +235,20 @@ function filterMotors(motors, filters) {
 /**
  * Progressive filtering - melonggarkan filter bertahap jika hasil < MIN_RESULTS
  *
+ * Urutan pelonggaran (dari least aggressive ke most aggressive):
+ * 1. Budget +25%
+ * 2. Budget +50%
+ * 3. CC: besar → sedang (601-1000cc → 251-600cc)
+ * 4. CC: sedang → kecil2 (251-600cc → 151-250cc)
+ * 5. Budget +100%
+ * 6. Toleransi tinggi +20cm
+ * 7. Budget tanpa batas
+ * 8. Toleransi tinggi +30cm
+ * 9. Semua tipe motor
+ * 10. Semua CC (CC filter dihapus)
+ *
+ * NOTE: Filter CC dan Tipe MOTOR dilonggarkan bertahap, bukan dihapus sepenuhnya
+ *
  * @param {Array} motors - Semua motor
  * @param {Object} filters - Filter awal
  * @returns {Object} { motors, relaxed, appliedTipe }
@@ -228,7 +257,7 @@ function progressiveFilter(motors, filters) {
   const { budget, tipe, cc, tinggi } = filters;
   const relaxed = [];
 
-  // ── STEP 0: Normal filter ─────────────────────────────────────────────────
+  // ── STEP 0: Normal filter (strict) ───────────────────────────────────────
   let filtered = filterMotors(motors, { budget, tipe, cc, tinggi });
   if (filtered.length >= MIN_RESULTS) {
     return { motors: filtered, relaxed, appliedTipe: tipe };
@@ -252,7 +281,35 @@ function progressiveFilter(motors, filters) {
     }
   }
 
-  // ── STEP 3: Budget +100% ─────────────────────────────────────────────────
+  // ── STEP 3: CC dilonggarkan (besar → sedang) ────────────────────────────
+  if (cc === 'besar') {
+    filtered = filterMotors(motors, { budget, tipe, cc: 'sedang', tinggi });
+    if (filtered.length >= MIN_RESULTS) {
+      relaxed.push('CC dilonggarkan ke 251–600cc');
+      return { motors: filtered, relaxed, appliedTipe: tipe };
+    }
+    // Juga coba budget +25%
+    if (budget && budget > 0) {
+      filtered = filterMotors(motors, { budget: budget * 1.25, tipe, cc: 'sedang', tinggi });
+      if (filtered.length >= MIN_RESULTS) {
+        relaxed.push('CC dilonggarkan ke 251–600cc + Budget +25%');
+        return { motors: filtered, relaxed, appliedTipe: tipe };
+      }
+    }
+  }
+
+  // ── STEP 4: CC dilonggarkan (sedang → kecil2) ────────────────────────────
+  if (cc === 'sedang' || cc === 'besar') {
+    const targetCC = cc === 'besar' ? 'sedang' : 'kecil2';
+    filtered = filterMotors(motors, { budget, tipe, cc: targetCC, tinggi });
+    if (filtered.length >= MIN_RESULTS) {
+      const ccLabel = targetCC === 'sedang' ? '251–600cc' : '151–250cc';
+      relaxed.push(`CC dilonggarkan ke ${ccLabel}`);
+      return { motors: filtered, relaxed, appliedTipe: tipe };
+    }
+  }
+
+  // ── STEP 5: Budget +100% ─────────────────────────────────────────────────
   if (budget && budget > 0) {
     filtered = filterMotors(motors, { budget: budget * 2.0, tipe, cc, tinggi });
     if (filtered.length >= MIN_RESULTS) {
@@ -261,54 +318,81 @@ function progressiveFilter(motors, filters) {
     }
   }
 
-  // ── STEP 4: Hapus CC filter ─────────────────────────────────────────────
-  if (cc && cc !== 'null') {
-    filtered = filterMotors(motors, { budget, tipe, cc: null, tinggi });
-    if (filtered.length >= MIN_RESULTS) {
-      relaxed.push('Kapasitas mesin dilonggarkan');
-      return { motors: filtered, relaxed, appliedTipe: tipe };
-    }
-  }
-
-  // ── STEP 5: Toleransi tinggi +15cm ──────────────────────────────────────
+  // ── STEP 6: Toleransi tinggi +20cm ──────────────────────────────────────
   if (tinggi && tinggi > 0) {
     filtered = motors.filter(m => {
-      // Tipe tetap strict
       if (tipe && tipe !== 'null' && m.category !== tipe) return false;
+      if (cc && cc !== 'null' && !inCCSegment(m, cc)) return false;
       const seatH = Number(m.seat_h) || 760;
       const minTinggi = Math.round((seatH - 600) * 0.22 + 120);
-      return minTinggi <= tinggi + 15;
+      return minTinggi <= tinggi + 20;
     });
     if (filtered.length >= MIN_RESULTS) {
-      relaxed.push('Toleransi tinggi +15cm');
+      relaxed.push('Toleransi tinggi +20cm');
       return { motors: filtered, relaxed, appliedTipe: tipe };
     }
   }
 
-  // ── STEP 6: Budget tanpa batas ───────────────────────────────────────────
-  if (budget && budget > 0) {
-    filtered = filterMotors(motors, { budget: null, tipe, cc, tinggi });
-    if (filtered.length >= MIN_RESULTS) {
-      relaxed.push('Budget dilonggarkan');
-      return { motors: filtered, relaxed, appliedTipe: tipe };
-    }
-  }
-
-  // ── STEP 7: Semua tipe (tipe tetap strict) ───────────────────────────────
-  filtered = motors.filter(m => {
-    if (tipe && tipe !== 'null' && m.category !== tipe) return false;
-    return true;
-  });
-
+  // ── STEP 7: Budget tanpa batas ───────────────────────────────────────────
+  filtered = filterMotors(motors, { budget: null, tipe, cc, tinggi });
   if (filtered.length >= MIN_RESULTS) {
-    relaxed.push('Filter lain dilonggarkan');
+    relaxed.push('Budget dilonggarkan');
     return { motors: filtered, relaxed, appliedTipe: tipe };
   }
 
-  // ── STEP 8: Fallback ─────────────────────────────────────────────────────
+  // ── STEP 8: Toleransi tinggi +30cm (maksimum) ──────────────────────────
+  if (tinggi && tinggi > 0) {
+    filtered = motors.filter(m => {
+      if (tipe && tipe !== 'null' && m.category !== tipe) return false;
+      if (cc && cc !== 'null' && !inCCSegment(m, cc)) return false;
+      const seatH = Number(m.seat_h) || 760;
+      const minTinggi = Math.round((seatH - 600) * 0.22 + 120);
+      return minTinggi <= tinggi + 30;
+    });
+    if (filtered.length >= MIN_RESULTS) {
+      relaxed.push('Toleransi tinggi +30cm');
+      return { motors: filtered, relaxed, appliedTipe: tipe };
+    }
+  }
+
+  // ── STEP 9: Semua tipe motor (CC filter tetap aktif) ────────────────────
+  filtered = motors.filter(m => {
+    if (cc && cc !== 'null' && !inCCSegment(m, cc)) return false;
+    return true;
+  });
+  if (filtered.length >= MIN_RESULTS) {
+    relaxed.push('Filter tipe dilonggarkan');
+    return { motors: filtered, relaxed, appliedTipe: tipe };
+  }
+
+  // ── STEP 10: Semua CC (hanya budget filter aktif) ────────────────────────
+  filtered = filterMotors(motors, { budget, tipe, cc: null, tinggi });
+  if (filtered.length >= MIN_RESULTS) {
+    relaxed.push('CC dilonggarkan ke semua');
+    return { motors: filtered, relaxed, appliedTipe: tipe };
+  }
+
+  // ── STEP 11: CC dilonggarkan + Budget +25% ──────────────────────────────
+  if (budget && budget > 0) {
+    filtered = filterMotors(motors, { budget: budget * 1.25, tipe, cc: null, tinggi });
+    if (filtered.length >= MIN_RESULTS) {
+      relaxed.push('CC & Budget dilonggarkan +25%');
+      return { motors: filtered, relaxed, appliedTipe: tipe };
+    }
+  }
+
+  // ── STEP 12: Fallback - KEMBALI KE HASIL AWAL DENGAN FILTER CC ──────────
+  // Jika tidak ada hasil sama sekali dengan filter CC, kembalikan hasil strict
+  filtered = filterMotors(motors, { budget, tipe, cc, tinggi });
+  if (filtered.length > 0) {
+    relaxed.push('Hasil dengan filter CC aktif');
+    return { motors: filtered, relaxed, appliedTipe: tipe };
+  }
+
+  // ── STEP 13: Absolute fallback ──────────────────────────────────────────
   relaxed.push('Hasil default');
   return {
-    motors: filtered.length > 0 ? filtered : motors.slice(0, 1),
+    motors: motors.slice(0, MIN_RESULTS),
     relaxed,
     appliedTipe: tipe
   };
@@ -451,7 +535,7 @@ function buildReasons(motor, answers, allMotors) {
  * @param {string} answers.usage - Penggunaan: 'harian', 'touring', 'sport', 'keluarga'
  * @param {string} answers.tipe - Tipe motor: 'Matic', 'Sport', 'Naked', 'null'
  * @param {string} answers.prioritas - Prioritas: 'harga', 'bbm', 'performa', 'nyaman'
- * @param {string} answers.cc - Kapasitas CC: 'kecil', 'sedang', 'besar', 'super'
+ * @param {string} answers.cc - Kapasitas CC: 'kecil1', 'kecil2', 'sedang', 'besar'
  * @param {string} answers.tinggi - Tinggi badan user (cm)
  *
  * @returns {Object} Hasil rekomendasi
@@ -470,20 +554,32 @@ function runSAW(answers, motorsData = null) {
   // ════════════════════════════════════════════════════════════════════════════
   let motors = motorsData;
 
+  console.log('[SAW] Starting with motorsData:', motorsData);
+  console.log('[SAW] window.MOTORS:', typeof window !== 'undefined' ? window.MOTORS : 'N/A');
+  console.log('[SAW] window.MOTORS length:', typeof window !== 'undefined' && window.MOTORS ? window.MOTORS.length : 'N/A');
+
+  console.log('[SAW] Input answers:', JSON.stringify(answers));
+
   if (!motors || motors.length === 0) {
     // Coba ambil dari window.MOTORS (fallback)
-    if (typeof window !== 'undefined' && window.MOTORS) {
+    if (typeof window !== 'undefined' && window.MOTORS && window.MOTORS.length > 0) {
       motors = window.MOTORS;
+      console.log('[SAW] Using window.MOTORS, count:', motors.length);
     } else if (typeof window !== 'undefined' && window.DB?.getAllMotors) {
-      motors = window.DB.getAllMotors();
+      const dbMotors = window.DB.getAllMotors();
+      console.log('[SAW] Using DB.getAllMotors, count:', dbMotors.length);
+      if (dbMotors.length > 0) motors = dbMotors;
     }
   }
 
   if (!motors || motors.length === 0) {
     console.error('[SAW] Error: Data motor tidak tersedia');
+    const defaultWeights = (typeof window !== 'undefined' && window.DEFAULT_WEIGHTS)
+      ? window.DEFAULT_WEIGHTS
+      : { C1: 0.25, C2: 0.25, C3: 0.25, C4: 0.25 };
     return {
       results: [],
-      weights: DEFAULT_WEIGHTS || {},
+      weights: defaultWeights,
       relaxed: ['Data motor tidak tersedia'],
       meta: {
         method: 'SAW',
@@ -493,6 +589,8 @@ function runSAW(answers, motorsData = null) {
       }
     };
   }
+
+  console.log('[SAW] Using motors count:', motors.length);
 
   // ════════════════════════════════════════════════════════════════════════════
   // STEP 2: Parse jawaban user
@@ -642,6 +740,13 @@ function runSAW(answers, motorsData = null) {
   // STEP 10: Format output
   // ════════════════════════════════════════════════════════════════════════════
 
+  const ccLabelMap = {
+    kecil1: '100–150cc',
+    kecil2: '151–250cc',
+    sedang: '251–600cc',
+    besar: '601–1000cc'
+  };
+
   // Format results untuk response
   const results = scoredMotors.map(m => ({
     rank: m.rank,
@@ -661,6 +766,7 @@ function runSAW(answers, motorsData = null) {
     Vi: m.Vi,
     sawScore: m.sawScore,
     ergoScore: m.ergoScore,
+    normalized: m.normalized,
     reasons: m.rank <= 3 ? buildReasons(m, answers, filteredMotors) : [],
   }));
 
@@ -672,7 +778,7 @@ function runSAW(answers, motorsData = null) {
       filterApplied: {
         tipe: appliedTipe || 'Semua',
         budget: budget ? `${formatRupiah(budget)} (strict)` : 'No limit',
-        cc: cc || 'Semua',
+        cc: cc ? (ccLabelMap[cc] || cc) : 'Semua',
       },
       appliedRelaxation: relaxed,
     },
@@ -687,9 +793,11 @@ function runSAW(answers, motorsData = null) {
 
 // ── Export ──────────────────────────────────────────────────────────────────────
 
-// Browser global
+// Browser global - SIMPAN di _sawCoreImpl agar bisa diakses wrapper
 if (typeof window !== 'undefined') {
-  window.runSAW = runSAW;
+  window._sawCoreImpl = runSAW;  // Simpan implementasi asli
+  window.runSAW = runSAW;        // Timpa dengan implementasi asli
+  console.log('[SAW] Core loaded - _sawCoreImpl and runSAW set');
 }
 
 // Node.js module

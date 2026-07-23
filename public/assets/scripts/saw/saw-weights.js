@@ -367,11 +367,11 @@ class SAWWeightCalculator {
     /** @type {Object} Jawaban user */
     this.answers = answers;
 
+    /** @type {Array} Log penyesuaian untuk dokumentasi - INISIALISASI SEBELUM _calculateWeights */
+    this.adjustmentLog = [];
+
     /** @type {Object} Bobot hasil perhitungan */
     this.weights = this._calculateWeights();
-
-    /** @type {Array} Log penyesuaian untuk dokumentasi */
-    this.adjustmentLog = [];
   }
 
   /**

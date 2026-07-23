@@ -1,0 +1,50 @@
+{
+  "users": {
+    "user": {
+      "id": 1,
+      "full_name": "User Demo",
+      "username": "user",
+      "password_hash": "pbkdf2$120000$484d8c61802345bcab8a71d7d357a58a$51b9c9588eb8cb4d4214df1f5047d4f88f21cffc41012247c17df558e0be681c",
+      "role": "user",
+      "created_at": "2026-07-17T03:29:57.982Z"
+    },
+    "testuser": {
+      "id": 2,
+      "full_name": "Test User",
+      "username": "testuser",
+      "password_hash": "pbkdf2$120000$b4b2f6817038adb79a5534978159ca91$af62664bc8c0e0825143b5666317e833ae2dd314ab08d7b236facf19d2823ff1",
+      "role": "user",
+      "created_at": "2026-07-17T03:31:00.371Z"
+    },
+    "tosan_0011": {
+      "id": 3,
+      "full_name": "Tosan Aji Satrio",
+      "username": "tosan_0011",
+      "password_hash": "pbkdf2$120000$c3138c3a5196a4bb2842c15ebf2e7145$4b27b4b29ae73b60a947f8571e3aa2268952c871b62b731eaac8a34b26f03806",
+      "role": "user",
+      "created_at": "2026-07-17T03:33:24.916Z"
+    },
+    "admin": {
+      "id": 4,
+      "full_name": "admin",
+      "username": "admin",
+      "password_hash": "pbkdf2$120000$955c691edc713e95227e2e9b6b9f9fdf$f38a1dbcc45ceddef1fd088be199846c64d1abbcfc0f95dd80fd77c3b79fee81",
+      "role": "user",
+      "created_at": "2026-07-23T07:52:10.111Z"
+    },
+    "admin1": {
+      "id": 5,
+      "full_name": "admin1",
+      "username": "admin1",
+      "password_hash": "pbkdf2$120000$fc9816dcb2237b22fcf2071f18cf86c3$8b0a7ee1fb153d3a7942525b7477a20f46861a802f8c7d3fa15a8d6fdcc201f5",
+      "role": "user",
+      "created_at": "2026-07-23T08:17:02.087Z"
+    }
+  },
+  "sessions": {
+    "2a6196e8aa89bd7daf562f3032cdb85d757d2b8ad77867be1ba1eec7bb48f00b": {
+      "userId": 5,
+      "expires": "2026-07-23T20:17:02.128Z"
+    }
+  }
+}

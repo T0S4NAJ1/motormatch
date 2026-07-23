@@ -3,14 +3,13 @@
 /* ============================================================
    app.js — Controller Beranda MotorMatch (versi dengan login)
    Bagian 1: Beranda (katalog motor) — publik
-   Bagian 2: Rekomendasi (wizard 6 kategori) — butuh login,
-             dibuka di /user-dashboard.html
+   Bagian 2: Rekomendasi (wizard 6 kategori) — butuh login.
 
    Navigasi sadar sesi:
    - Belum login  -> tampil tombol Login & Daftar
    - Sudah login  -> tampil nama user, menu Rekomendasi, Logout
    Tombol/link ber-class ".go-rec" mengarah ke rekomendasi:
-   - login  -> /user-dashboard.html
+   - login  -> /landing.html
    - belum  -> /login.html
    ============================================================ */
 
@@ -32,16 +31,21 @@ const Gallery = (() => {
       if (brand !== 'all' && m.brand !== brand)   return false;
       if (tipe  !== 'all' && m.category !== tipe) return false;
       if (cc !== 'all') {
-        if (cc === 'kecil' && m.cc > 125)  return false;
-        if (cc === 'sedang' && (m.cc <= 125 || m.cc > 250)) return false;
+        if (cc === 'kecil1' && (m.cc < 100 || m.cc > 150)) return false;
+        if (cc === 'kecil2' && (m.cc < 151 || m.cc > 250)) return false;
+        if (cc === 'sedang' && (m.cc < 251 || m.cc > 600)) return false;
+        if (cc === 'besar' && m.cc < 601) return false;
       }
       return true;
     });
   }
 
   function card(m) {
+    // FIX: Pakai data-motor + openSpecWizardFromCard (sama seperti katalog di landing.html)
+    // openModal + data-modal-id lama tidak berfungsi karena CSS motorModal ada issue
+    const motorJson = JSON.stringify(m).replace(/'/g, "&#39;");
     return `
-      <div class="motor-card" data-modal-id="${m.id}">
+      <div class="motor-card" data-motor='${motorJson}' onclick="openSpecWizardFromCard(this)">
         <div class="motor-thumb">
           <img src="${m.img}" alt="${m.brand} ${m.model}" loading="lazy"
                onerror="this.onerror=null;this.src='assets/images/placeholder.svg'">
@@ -108,7 +112,7 @@ function applySession(user) {
 
   if (user) {
     show('nav-login', false);
-    show('nav-register', false);
+    show('nav-register', true);   // FIX: Riwayat harus tetap tampil saat login (bukan disembunyikan!)
     show('nav-rekomendasi', true);
     show('nav-logout', true);
     show('nav-user-badge', true);
@@ -123,12 +127,41 @@ function applySession(user) {
   }
 }
 
-function goToRecommendation() {
-  // Belum login -> ke halaman login (lalu kembali otomatis ke rekomendasi)
-  location.href = isLoggedIn
-    ? '/user-dashboard.html'
-    : '/login.html?next=' + encodeURIComponent('/user-dashboard.html');
+// ============================================================
+// Navigasi SPA — pindah antar section dalam SATU halaman
+// (tidak lagi navigate ke landing.html!)
+// ============================================================
+function navigateTo(pageName) {
+  if (typeof showPage === 'function') showPage(pageName);
+
+  // Update active state di navbar
+  document.querySelectorAll('.nav-link[data-page]').forEach(link => {
+    link.classList.toggle('active', link.dataset.page === pageName);
+  });
+
+  // Aksi spesifik per halaman
+  if (pageName === 'wizard' && typeof Wizard !== 'undefined') {
+    Wizard.reset(); // Reset ke step 1 dan render ulang
+  }
+  if (pageName === 'katalog' && typeof Katalog !== 'undefined') {
+    Katalog.render(); // Render grid katalog
+  }
+  // Scroll ke atas saat pindah page
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+function goToRecommendation() {
+  if (isLoggedIn) {
+    // FIX: SPA — tampilkan wizard DALAM halaman ini, tidak lagi ke landing.html!
+    navigateTo('wizard');
+  } else {
+    // Belum login → ke login, lalu kembali ke index.html?page=wizard
+    location.href = '/login.html?next=' + encodeURIComponent('/index.html?page=wizard');
+  }
+}
+
+// Expose to global scope for use by other pages
+window.goToRecommendation = goToRecommendation;
 
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -149,20 +182,40 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2) Render galeri
   Gallery.render();
 
-  // 3) Cek sesi login (tidak memblokir beranda — beranda tetap publik)
-  if (window.Auth && typeof Auth.me === 'function') {
+  // 3) Cek sesi login
+  if (typeof Auth !== 'undefined' && typeof Auth.me === 'function') {
     try {
       const user = await Auth.me();
       applySession(user);
     } catch (_) {
-      Auth.clearSession && Auth.clearSession();
+      typeof Auth.clearSession === 'function' && Auth.clearSession();
       applySession(null);
     }
   } else {
     applySession(null);
   }
 
-  // 4) Tombol "Lihat Galeri Motor"
+  // 4) Inisialisasi Wizard (FIX: harus dipanggil sekali setelah DOM siap)
+  if (typeof Wizard !== 'undefined') {
+    Wizard.initEvents();
+  }
+
+  // 5) Cek URL param → langsung ke halaman tertentu (misal: /index.html?page=wizard setelah login)
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetPage = urlParams.get('page');
+  if (targetPage) {
+    if (targetPage === 'katalog') {
+      // Katalog bisa diakses tanpa login — scroll ke galeri
+      setTimeout(() => {
+        const galeriEl = document.getElementById('galeri-section');
+        if (galeriEl) galeriEl.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    } else if (isLoggedIn) {
+      navigateTo(targetPage);
+    }
+  }
+
+  // 6) Tombol "Lihat Galeri Motor"
   const galeriBtn = document.getElementById('btn-lihat-galeri');
   if (galeriBtn) {
     galeriBtn.addEventListener('click', () =>
@@ -173,38 +226,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.addEventListener('click', e => {
     const t = e.target;
 
-    // Tombol/link menuju rekomendasi (login-gated)
+    // Navigasi SPA via data-page (Beranda, Katalog, Hasil, Wizard)
+    const pageEl = t.closest('[data-page]');
+    if (pageEl && !t.closest('a[href]')) {
+      const pageName = pageEl.dataset.page;
+      if (pageName === 'wizard') {
+        goToRecommendation(); // Cek login dulu
+      } else {
+        navigateTo(pageName);
+      }
+      return;
+    }
+
+    // Tombol .go-rec (hero + CTA section)
     if (t.closest('.go-rec')) {
-      document.getElementById('motorModal').classList.remove('open');
+      if (typeof closeSpecWizard === 'function') closeSpecWizard();
+      const motorModal = document.getElementById('motorModal');
+      if (motorModal) motorModal.classList.remove('open');
       goToRecommendation();
       return;
     }
 
-    // Link Riwayat
+    // Tombol "← Ubah Preferensi" di halaman hasil
+    if (t.id === 'btn-ubah-pref' || t.closest('#btn-ubah-pref')) {
+      navigateTo('wizard');
+      return;
+    }
+
+    // Logo → beranda
+    if (t.closest('.logo')) {
+      navigateTo('home');
+      return;
+    }
+
+    // Link Riwayat — biarkan navigasi normal ke /history.html
     if (t.closest('#nav-register')) {
-      return; // Biarkan link berfungsi normal ke /history.html
+      return;
     }
 
     // Logout
     if (t.closest('#nav-logout')) {
-      if (window.Auth) Auth.logout();
-      return;
-    }
-
-    // Navigasi data-page (hanya 'home' pada beranda)
-    const pageEl = t.closest('[data-page]');
-    if (pageEl) { showPage(pageEl.dataset.page); return; }
-
-    // Logo -> beranda
-    if (t.closest('.logo')) { showPage('home'); return; }
-
-    // Detail motor
-    const modalEl = t.closest('[data-modal-id]');
-    if (modalEl) { openModal(Number(modalEl.dataset.modalId)); return; }
-
-    // Tutup modal
-    if (t === document.getElementById('motorModal') || t.closest('#modal-close')) {
-      document.getElementById('motorModal').classList.remove('open');
+      if (typeof Auth !== 'undefined') Auth.logout();
       return;
     }
 
@@ -220,6 +282,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ccChip = t.closest('#gallery-cc .chip');
     if (ccChip) { Gallery.setCC(ccChip.dataset.cc, ccChip); return; }
 
+    // Filter katalog: tipe button
+    const filterTipeBtn = t.closest('#filter-tipe .filter-btn');
+    if (filterTipeBtn && typeof Katalog !== 'undefined') {
+      Katalog.setTipe(filterTipeBtn.dataset.tipe, filterTipeBtn); return;
+    }
+
+    // Filter katalog: cc button
+    const filterCCBtn = t.closest('#filter-cc .filter-btn');
+    if (filterCCBtn && typeof Katalog !== 'undefined') {
+      Katalog.setCC(filterCCBtn.dataset.cc, filterCCBtn); return;
+    }
+
     // Hamburger (mobile)
     if (t.closest('#nav-hamburger')) {
       document.getElementById('nav-links').classList.toggle('open');
@@ -227,10 +301,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Filter katalog: search & sort & brand checkboxes
+  const katSearch = document.getElementById('kat-search');
+  if (katSearch) katSearch.addEventListener('input', () => { if (typeof Katalog !== 'undefined') Katalog.filter(); });
+
+  const katSort = document.getElementById('kat-sort');
+  if (katSort) katSort.addEventListener('change', () => { if (typeof Katalog !== 'undefined') Katalog.filter(); });
+
+  document.querySelectorAll('.brand-cb').forEach(cb => {
+    cb.addEventListener('change', () => { if (typeof Katalog !== 'undefined') Katalog.filter(); });
+  });
+
   // 6) Escape menutup modal
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      document.getElementById('motorModal').classList.remove('open');
+      // FIX: gallery sekarang pakai specWizardModal, bukan motorModal
+      if (typeof closeSpecWizard === 'function') closeSpecWizard();
+      const motorModal = document.getElementById('motorModal');
+      if (motorModal) motorModal.classList.remove('open');
     }
   });
 });

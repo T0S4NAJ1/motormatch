@@ -7,7 +7,7 @@ const db = require('./database-service.js');
 async function main() {
   console.log('');
   console.log('  ╔════════════════════════════════════════════╗');
-  console.log('  ║   MotorMatch — Database Doctor             ║');
+  console.log('  ║   MotorMatch — Database Doctor             ║');  
   console.log('  ╚════════════════════════════════════════════╝');
   console.log('');
 

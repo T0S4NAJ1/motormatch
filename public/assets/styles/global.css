@@ -454,6 +454,8 @@ body::after {
   width: 40px;
   text-align: center;
   font-size: 1.2rem;
+  font-weight: 700;
+  font-family: monospace;
 }
 
 .spec-table td.spec-label {
